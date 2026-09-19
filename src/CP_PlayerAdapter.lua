@@ -1,4 +1,4 @@
-﻿-- =============================================================
+-- =============================================================
 -- FS25_CourseplayPlayerUnload: CP_PlayerAdapter.lua
 -- Author: exekx
 -- Description: Virtual Courseplay Strategy Adapter for human player combines
@@ -103,6 +103,22 @@ function CP_PlayerAdapter:getFieldworkCourse()
     return nil
 end
 
+function CP_PlayerAdapter:getClosestFieldworkWaypointIx()
+    return 1
+end
+
+function CP_PlayerAdapter:getRendezvousWaypoint(distAhead)
+    distAhead = distAhead or 30
+    local course = self:getFieldworkCourse()
+    if course == nil then return nil end
+    local wpIx = math.max(1, math.min(50, math.floor(distAhead / 2.0) + 1))
+    if type(course.getWaypoint) == "function" then
+        return course:getWaypoint(wpIx)
+    elseif course.waypoints then
+        return course.waypoints[wpIx] or course.waypoints[1]
+    end
+    return nil
+end
 function CP_PlayerAdapter:getCurrentCourse()
     return self:getFieldworkCourse()
 end
@@ -375,7 +391,8 @@ function CP_PlayerAdapter:willWaitForUnloadToFinish()
 end
 
 function CP_PlayerAdapter:isWaitingForUnload()
-    return self.combine:getLastSpeed() < 0.5
+    -- Always false for player combine so unloader never aborts when player stops
+    return false
 end
 
 function CP_PlayerAdapter:isReadyToUnload(ignoreFillLevel)

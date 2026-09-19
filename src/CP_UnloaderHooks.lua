@@ -74,6 +74,94 @@ function CP_UnloaderHooks.init()
         print("CP_PlayerUnload: Hooked AIDriveStrategyUnloadCombine.releaseCombine")
     end
 
+    -- 3b. Hook AIDriveStrategyUnloadCombine:isBehindAndAlignedToCombine
+    -- For player combines, allows extended chase distance (up to 120m) and wider angle tolerance (45 deg)
+    -- so that if the player starts driving after calling the unloader, the tractor will chase and
+    -- catch up instead of aborting to idle!
+    if AIDriveStrategyUnloadCombine and AIDriveStrategyUnloadCombine.isBehindAndAlignedToCombine then
+        AIDriveStrategyUnloadCombine.isBehindAndAlignedToCombine = Utils.overwrittenFunction(
+            AIDriveStrategyUnloadCombine.isBehindAndAlignedToCombine,
+            function(self, superFunc, debugEnabled)
+                if self.combineToUnload and CP_UnloaderCaller and CP_UnloaderCaller.activeCombines and CP_UnloaderCaller.activeCombines[self.combineToUnload] ~= nil then
+                    local CpMathUtil = CP_GetCpClass("CpMathUtil") or _G.CpMathUtil
+                    local hasAutoAimPipe = self.combineToUnload:getCpDriveStrategy():hasAutoAimPipe()
+                    local dx, _, dz = localToLocal(self.vehicle.rootNode, self:getPipeOffsetReferenceNode(), 0, 0, 0)
+                    local pipeOffset = self:getPipeOffset(self.combineToUnload)
+                    if dz > (hasAutoAimPipe and -5 or 0) then
+                        return false
+                    end
+                    if not hasAutoAimPipe and not self:isLinedUpWithPipe(dx, dz, pipeOffset, debugEnabled) then
+                        return false
+                    end
+                    local d = MathUtil.vector2Length(dx, dz)
+                    local dLimit = 120
+                    if d > dLimit then
+                        return false
+                    end
+                    local dirLimit = 45
+                    if CpMathUtil and not CpMathUtil.isSameDirection(self.vehicle:getAIDirectionNode(), self.combineToUnload:getAIDirectionNode(), dirLimit) then
+                        return false
+                    end
+                    return true
+                end
+                return superFunc(self, debugEnabled)
+            end
+        )
+        print("CP_PlayerUnload: Hooked AIDriveStrategyUnloadCombine.isBehindAndAlignedToCombine for player combines")
+    end
+
+    -- 3c. Hook AIDriveStrategyUnloadCombine:driveToCombine
+    -- If player combine started moving while unloader was approaching, seamlessly transition
+    -- to unloading / following the moving combine without waiting to hit the old stationary point!
+    if AIDriveStrategyUnloadCombine and AIDriveStrategyUnloadCombine.driveToCombine then
+        AIDriveStrategyUnloadCombine.driveToCombine = Utils.overwrittenFunction(
+            AIDriveStrategyUnloadCombine.driveToCombine,
+            function(self, superFunc)
+                if self.combineToUnload and CP_UnloaderCaller and CP_UnloaderCaller.activeCombines and CP_UnloaderCaller.activeCombines[self.combineToUnload] ~= nil then
+                    self:checkForCombineProximity()
+                    self:setFieldSpeed()
+                    self.combineToUnload:getCpDriveStrategy():reconfirmRendezvous()
+
+                    local combineSpeed = (self.combineToUnload.getLastSpeed and self.combineToUnload:getLastSpeed()) or 0
+                    local distToLast = (self.course and self.course.getDistanceToLastWaypoint and self.course:getDistanceToLastWaypoint(self.course:getCurrentWaypointIx())) or 0
+                    if (combineSpeed > 0.5 or distToLast < 25) and self:isOkToStartUnloadingCombine() then
+                        self:startUnloadingCombine()
+                        return
+                    end
+                    return
+                end
+                return superFunc(self)
+            end
+        )
+        print("CP_PlayerUnload: Hooked AIDriveStrategyUnloadCombine.driveToCombine for seamless moving transition")
+    end
+
+    -- 3d. Hook AIDriveStrategyUnloadCombine:onLastWaypointPassed
+    -- If unloader reaches the old call position and combine has moved/turned, re-target combine
+    -- instead of giving up and switching to IDLE!
+    if AIDriveStrategyUnloadCombine and AIDriveStrategyUnloadCombine.onLastWaypointPassed then
+        AIDriveStrategyUnloadCombine.onLastWaypointPassed = Utils.overwrittenFunction(
+            AIDriveStrategyUnloadCombine.onLastWaypointPassed,
+            function(self, superFunc)
+                if self.state == self.states.DRIVING_TO_COMBINE and self.combineToUnload and CP_UnloaderCaller and CP_UnloaderCaller.activeCombines and CP_UnloaderCaller.activeCombines[self.combineToUnload] ~= nil then
+                    if self:isOkToStartUnloadingCombine() then
+                        self:startUnloadingCombine()
+                        return
+                    else
+                        print(string.format("CP_PlayerUnload: Waypoint reached, re-targeting active player combine '%s'", tostring(self.combineToUnload:getName())))
+                        local xOffset, zOffset = self:getPipeOffset(self.combineToUnload)
+                        zOffset = -self:getCombinesMeasuredBackDistance() - 5
+                        self:setNewState(self.states.WAITING_FOR_PATHFINDER)
+                        self:startPathfindingToWaitingCombine(xOffset, zOffset)
+                        return
+                    end
+                end
+                return superFunc(self)
+            end
+        )
+        print("CP_PlayerUnload: Hooked AIDriveStrategyUnloadCombine.onLastWaypointPassed for re-targeting")
+    end
+
     -- 4. Hook AIDriveStrategyCombineCourse.isActiveCpCombine
     if AIDriveStrategyCombineCourse and AIDriveStrategyCombineCourse.isActiveCpCombine then
         AIDriveStrategyCombineCourse.isActiveCpCombine = Utils.overwrittenFunction(

@@ -29,17 +29,26 @@ function CP_VirtualCourse:update()
     self.lastUpdateTime = currentTime
 
     local dirNode = self.combine:getAIDirectionNode() or self.combine.rootNode
+    local _, yRot, _ = getWorldRotation(dirNode)
+    local angleDeg = math.deg(yRot)
+    local dx, dz = -math.sin(yRot), -math.cos(yRot)
     local Course = CP_GetCpClass("Course")
 
     -- Generate 50 points (100 meters) straight ahead in combine coordinate frame
     local rawWaypoints = {}
     for i = 0, 50 do
         local dist = i * 2.0
-        local wx, _, wz = localToWorld(dirNode, 0, 0, dist)
+        local wx, wy, wz = localToWorld(dirNode, 0, 0, dist)
         table.insert(rawWaypoints, {
             x = wx,
+            y = wy,
             z = wz,
-            rev = false
+            angle = angleDeg,
+            yRot = yRot,
+            dx = dx,
+            dz = dz,
+            rev = false,
+            getIsReverse = function() return false end
         })
     end
 

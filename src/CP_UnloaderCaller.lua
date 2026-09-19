@@ -144,16 +144,19 @@ function CP_UnloaderCaller.onUpdateTick(dt)
                     end
 
                     -- 2. Unloader Call Dispatcher:
-                    -- Condition A: Player opened pipe (edge-triggered) and hopper has grain (> 1%)
-                    -- Condition B: Auto-call enabled (Shift+I) and hopper is >= 80% full
-                    -- Both conditions enforce an 8-second grace period after an unloader departs
                     if isEntered and not adapter.assignedUnloader then
                         local timeSinceDeparted = currentTime - (adapter.lastDepartedTime or 0)
                         local canCall = timeSinceDeparted > 8000
+                        local isStopped = (vehicle.getLastSpeed and vehicle:getLastSpeed() < 0.5)
 
                         local shouldCall = false
-                        if adapter.pipeCallEligible and fillPercent > 1.0 and canCall then
+                        -- Scenario 1: Combine is STOPPED (e.g. end of field) with pipe open -> allow calling even at low fill (> 0.5%)
+                        if isStopped and pipeOpen and fillPercent > 0.5 and canCall then
                             shouldCall = true
+                        -- Scenario 2: Moving with freshly unfolded pipe (edge-triggered) -> require >= 15% fill level
+                        elseif not isStopped and adapter.pipeCallEligible and fillPercent >= 15.0 and canCall then
+                            shouldCall = true
+                        -- Scenario 3: Auto-call (Shift+I) when tank reaches >= 80% full
                         elseif CP_UnloaderCaller.autoCallEnabled and fillPercent >= CP_UnloaderCaller.callThresholdPercent and canCall then
                             shouldCall = true
                         end
@@ -181,6 +184,8 @@ end
 
 function CP_UnloaderCaller.findBestUnloader(combine)
     if combine == nil or combine.rootNode == nil then return nil end
+    local adapter = CP_UnloaderCaller.activeCombines[combine]
+    local currentTime = (g_currentMission and g_currentMission.time) or 0
     local AIDriveStrategyUnloadCombine = CP_GetCpClass("AIDriveStrategyUnloadCombine")
     if AIDriveStrategyUnloadCombine == nil then
         print("CP_PlayerUnload: AIDriveStrategyUnloadCombine class could not be resolved from Courseplay environment!")
@@ -218,6 +223,7 @@ function CP_UnloaderCaller.findBestUnloader(combine)
                         if unloaderFill < 98 then
                             local vx, vy, vz = getWorldTranslation(v.rootNode)
                             local dist = MathUtil.vector2Length(cx - vx, cz - vz)
+
                             print(string.format("CP_PlayerUnload: Found candidate unloader '%s' at distance %.1f m (fill: %.1f%%, state: %s)",
                                 tostring(v:getName()), dist, unloaderFill, tostring(strategy.state)))
                             if dist < bestDistance then
