@@ -4,6 +4,8 @@
     <version>1.0.0.0</version>
     <title>
         <en>Courseplay: Unload Me</en>
+        <de>Courseplay: Unload Me</de>
+        <fr>Courseplay: Unload Me</fr>
     </title>
     <description>
 <en><![CDATA[An add-on for Courseplay that enables Courseplay AI unloaders to automatically approach, track, and unload player-driven combines!
@@ -32,32 +34,6 @@ Credits:
 - Author: exekx
 - Special thanks to Courseplay.devTeam for creating the Courseplay mod for Farming Simulator 25 (https://github.com/Courseplay/Courseplay_FS25).]]></en>
 
-<uk><![CDATA[Аддон для Courseplay, який дозволяє тракторам-розвантажувачам Courseplay автоматично під'їжджати, супроводжувати та розвантажувати комбайн, яким керує живий гравець!
-
-Як працює виклик трактора:
-- Відкриття труби (Працює ЗАВЖДИ): Розкладання вивантажувальної труби комбайна (коли в бункері є зерно > 1%) ЗАВЖДИ автоматично викликає розвантажувач, незалежно від будь-яких налаштувань! Складання труби сигналізує трактору завершити розвантаження та від'їхати (або скасовує рух, якщо він ще їде до вас).
-- Правий Shift + I (Авто-виклик на 80%): За замовчуванням ВИМКНЕНО. Комбінація Shift + I додає ТІЛЬКИ попередній виклик трактора, коли бункер комбайна наповнюється більше ніж на 80% (ще до того, як ви відкрили трубу).
-- Правий Shift + U (Ручний виклик): Миттєво викликає найближчого вільного розвантажувача в будь-який момент.
-
-Особливості:
-- Безшовна інтеграція комбайна гравця з тракторами-розвантажувачами Courseplay.
-- Динамічне векторне позиціонування точно утримує причіп під шнеком комбайна на ходу.
-- Плавний та безпечний від'їзд трактора після завершення вивантаження.
-
-Керування (Клавіатура):
-- Правий Shift + U: Викликати розвантажувач Courseplay негайно.
-- Правий Shift + I: Увімк/Вимк авто-виклик при 80% заповнення бункера (за замовчуванням вимкнено; відкриття труби викликає трактор завжди, незалежно від цієї клавіші).
-
-Вимоги:
-- Обов'язково потрібен встановлений та активований мод Courseplay (FS25_Courseplay).
-
-GitHub Репозиторій:
-- https://github.com/exekx/FS25_CourseplayPlayerUnload
-
-Подяки (Credits):
-- Автор аддону: exekx
-- Щира подяка команді Courseplay.devTeam за створення чудового моду Courseplay для Farming Simulator 25 (https://github.com/Courseplay/Courseplay_FS25).]]></uk>
-
 <de><![CDATA[Ein Add-on für Courseplay, das es Courseplay-Abfahrern ermöglicht, vom Spieler gesteuerte Mähdrescher automatisch anzufahren, zu begleiten und abzutanken!
 
 Wie der Abruf funktioniert:
@@ -65,7 +41,12 @@ Wie der Abruf funktioniert:
 - Rechte Umschalttaste + I (80% Tank-Auto-Ruf): Standardmäßig DEAKTIVIERT. Schaltet NUR den vorzeitigen automatischen Ruf ein/aus, wenn der Korntank mehr als 80% erreicht (noch vor dem Öffnen des Rohrs).
 - Rechte Umschalttaste + U (Manueller Sofortabruf): Ruft jederzeit sofort den nächsten freien Abfahrer.
 
-Steuerung:
+Eigenschaften:
+- Nahtlose Anbindung von spielergesteuerten Mähdreschern an Courseplay-Abfahrer-Traktoren.
+- Dynamische Vektorverfolgung hält den Traktor während der Ernte präzise unter dem Abtankrohr.
+- Kollisionsfreie Abfahrt nach Beendigung des Abtankvorgangs.
+
+Steuerung (Tastatur):
 - Rechte Umschalttaste + U: Freien Courseplay-Abfahrer sofort rufen.
 - Rechte Umschalttaste + I: Auto-Ruf bei 80% Füllung EIN / AUS schalten (standardmäßig AUS; das Ausfahren des Rohrs ruft den Abfahrer immer).
 
@@ -78,6 +59,32 @@ GitHub Repository:
 Credits:
 - Autor: exekx
 - Besonderer Dank an das Courseplay.devTeam für den großartigen Courseplay-Mod (https://github.com/Courseplay/Courseplay_FS25).]]></de>
+
+<fr><![CDATA[Une extension pour Courseplay qui permet aux tracteurs-bennes IA de Courseplay d'approcher, de suivre et de décharger automatiquement les moissonneuses-batteuses conduites par le joueur !
+
+Fonctionnement de l'appel :
+- Dépliage de la buse (Toujours actif) : Déplier votre buse de vidange (avec plus de 1% de grain) est un signal physique direct qui appelle TOUJOURS automatiquement une benne Courseplay ! Replier la buse indique à la benne de repartir (ou annule l'appel si elle est en route).
+- Maj droite + I (Appel auto à 80%) : Désactivé par défaut. Appuyer sur Maj droite + I active/désactive l'appel anticipé de la benne lorsque la trémie atteint 80% (avant même de déplier la buse).
+- Maj droite + U (Appel manuel immédiat) : Envoie immédiatement la benne disponible la plus proche à tout moment.
+
+Caractéristiques :
+- Connecte de manière fluide les moissonneuses conduites par le joueur avec les tracteurs de déchargement Courseplay.
+- Suivi dynamique qui maintient le tracteur précisément sous la buse pendant la récolte.
+- Manœuvres de départ sécurisées sans collision une fois le déchargement terminé.
+
+Commandes (Clavier) :
+- Maj droite + U : Appeler immédiatement une benne Courseplay.
+- Maj droite + I : Activer/Désactiver l'appel automatique à 80% de trémie (désactivé par défaut ; ouvrir la buse appelle toujours une benne).
+
+Prérequis :
+- Nécessite le mod Courseplay (FS25_Courseplay) installé et activé dans la partie.
+
+Dépôt GitHub :
+- https://github.com/exekx/FS25_CourseplayPlayerUnload
+
+Crédits :
+- Auteur : exekx
+- Un grand merci à Courseplay.devTeam pour le développement du mod Courseplay pour Farming Simulator 25 (https://github.com/Courseplay/Courseplay_FS25).]]></fr>
     </description>
     <iconFilename>icon_courseplayPlayerUnload.dds</iconFilename>
     <multiplayer supported="true" />
