@@ -5,7 +5,6 @@
 [![GitHub Repository](https://img.shields.io/badge/GitHub-FS25__CourseplayPlayerUnload-181717?logo=github)](https://github.com/exekx/FS25_CourseplayPlayerUnload)
 [![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)](https://www.gnu.org/licenses/gpl-3.0)
 [![Version](https://img.shields.io/badge/Version-1.0.0.0-brightgreen.svg)](https://github.com/exekx/FS25_CourseplayPlayerUnload/releases)
-
 A standalone add-on mod for **Farming Simulator 25** and **Courseplay** that enables Courseplay AI unloader tractors to automatically approach, track, match speed, and unload combines driven by human players!
 
 **Repository:** [https://github.com/exekx/FS25_CourseplayPlayerUnload](https://github.com/exekx/FS25_CourseplayPlayerUnload)
@@ -91,3 +90,11 @@ You don't need to press any hotkeys to get unloaded! Extending your discharge pi
 - **Add-on Repository:** [exekx/FS25_CourseplayPlayerUnload](https://github.com/exekx/FS25_CourseplayPlayerUnload)
 - **Original Courseplay:** Special thanks and gratitude to the **Courseplay.devTeam** for creating and maintaining the Courseplay mod for Farming Simulator 25 ([Courseplay GitHub Repository](https://github.com/Courseplay/Courseplay_FS25)).
 - **License:** Distributed under the **GNU General Public License v3.0 (GPL-3.0)**.
+
+---
+
+## Support the Project
+
+If you find this add-on helpful and enjoy your harvesting workflow, consider supporting ongoing development:
+
+[![Support me on Ko-fi](https://ko-fi.com/img/githubbutton_sm.svg)](https://ko-fi.com/exekx)
