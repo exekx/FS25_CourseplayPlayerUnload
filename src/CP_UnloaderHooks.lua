@@ -41,15 +41,22 @@ function CP_UnloaderHooks.init()
 
     -- 2. Hook AIDriveStrategyUnloadCombine:update
     -- Keeps unloader registered with our player combine adapter even though combine:getIsCpActive() is false
+    -- pcall ??????? ??? ????? ??????? ???? Courseplay ?????? self.vehicle = nil
     if AIDriveStrategyUnloadCombine and AIDriveStrategyUnloadCombine.update then
         AIDriveStrategyUnloadCombine.update = Utils.prependedFunction(
             AIDriveStrategyUnloadCombine.update,
             function(self, dt)
-                if self.combineToUnload and CP_UnloaderCaller and CP_UnloaderCaller.activeCombines and CP_UnloaderCaller.activeCombines[self.combineToUnload] ~= nil then
+                if not self or not self.combineToUnload then return end
+                if not CP_UnloaderCaller or not CP_UnloaderCaller.activeCombines then return end
+                if CP_UnloaderCaller.activeCombines[self.combineToUnload] == nil then return end
+                local ok, err = pcall(function()
                     local strategy = self.combineToUnload:getCpDriveStrategy()
                     if strategy and strategy.registerUnloader then
                         strategy:registerUnloader(self)
                     end
+                end)
+                if not ok then
+                    -- Courseplay ?????????? ? ??????????? ????? -- ???? ?????????
                 end
             end
         )
