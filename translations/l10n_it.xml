@@ -1,0 +1,16 @@
+﻿<?xml version="1.0" encoding="utf-8" standalone="no" ?>
+<l10n>
+    <translationContributors>exekx</translationContributors>
+    <texts>
+        <text name="cp_player_unload_mod_title" text="Courseplay: Scarica il giocatore"/>
+        <text name="cp_player_unload_mod_desc" text="Consente agli scaricatori di Courseplay di scaricare automaticamente le mietitrebbie guidate dal giocatore."/>
+        <text name="cp_player_unload_called" text="Lo scaricatore Courseplay '%s' è stato chiamato alla tua mietitrebbia."/>
+        <text name="cp_player_unload_arrived" text="Lo scaricatore Courseplay '%s' è posizionato sotto il tubo."/>
+        <text name="cp_player_unload_finished" text="Lo scaricatore Courseplay '%s' ha terminato lo scarico ed è ripartito."/>
+        <text name="cp_player_unload_no_unloader" text="Nessuno scaricatore Courseplay disponibile nelle vicinanze."/>
+        <text name="input_CP_PLAYER_UNLOAD_CALL" text="Chiama scaricatore Courseplay"/>
+        <text name="input_CP_PLAYER_UNLOAD_TOGGLE" text="Attiva/Disattiva chiamata auto 80%"/>
+        <text name="cp_player_unload_autocall_on" text="Chiamata automatica all'80%: ATTIVATA"/>
+        <text name="cp_player_unload_autocall_off" text="Chiamata automatica all'80%: DISATTIVATA"/>
+    </texts>
+</l10n>

@@ -1,0 +1,16 @@
+﻿<?xml version="1.0" encoding="utf-8" standalone="no" ?>
+<l10n>
+    <translationContributors>exekx</translationContributors>
+    <texts>
+        <text name="cp_player_unload_mod_title" text="Courseplay: Unload Me"/>
+        <text name="cp_player_unload_mod_desc" text="Enables Courseplay AI unloaders to automatically unload player-driven combines."/>
+        <text name="cp_player_unload_called" text="Courseplay unloader '%s' has been called to your combine."/>
+        <text name="cp_player_unload_arrived" text="Courseplay unloader '%s' is alongside your combine."/>
+        <text name="cp_player_unload_finished" text="Courseplay unloader '%s' has finished unloading and departed."/>
+        <text name="cp_player_unload_no_unloader" text="No idle Courseplay unloader found in range."/>
+        <text name="input_CP_PLAYER_UNLOAD_CALL" text="Call Courseplay Unloader"/>
+        <text name="input_CP_PLAYER_UNLOAD_TOGGLE" text="Toggle 80% Auto-Call"/>
+        <text name="cp_player_unload_autocall_on" text="Auto-call at 80% fill: ENABLED"/>
+        <text name="cp_player_unload_autocall_off" text="Auto-call at 80% fill: DISABLED"/>
+    </texts>
+</l10n>

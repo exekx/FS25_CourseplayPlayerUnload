@@ -1,0 +1,16 @@
+﻿<?xml version="1.0" encoding="utf-8" standalone="no" ?>
+<l10n>
+    <translationContributors>exekx</translationContributors>
+    <texts>
+        <text name="cp_player_unload_mod_title" text="Courseplay: Tøm mejetærsker"/>
+        <text name="cp_player_unload_mod_desc" text="Gør det muligt for Courseplay-frakørere automatisk at tømme mejetærskere, der køres af spilleren."/>
+        <text name="cp_player_unload_called" text="Courseplay-frakører '%s' er blevet kaldt til din mejetærsker."/>
+        <text name="cp_player_unload_arrived" text="Courseplay-frakører '%s' er ankommet ved siden af din mejetærsker."/>
+        <text name="cp_player_unload_finished" text="Courseplay-frakører '%s' er færdig med at læsse og kører væk."/>
+        <text name="cp_player_unload_no_unloader" text="Ingen ledig Courseplay-frakører fundet i nærheden."/>
+        <text name="input_CP_PLAYER_UNLOAD_CALL" text="Kald Courseplay-frakører"/>
+        <text name="input_CP_PLAYER_UNLOAD_TOGGLE" text="Slå 80% automatisk tilkald til/fra"/>
+        <text name="cp_player_unload_autocall_on" text="Automatisk tilkald ved 80%: AKTIVERET"/>
+        <text name="cp_player_unload_autocall_off" text="Automatisk tilkald ved 80%: DEAKTIVERET"/>
+    </texts>
+</l10n>

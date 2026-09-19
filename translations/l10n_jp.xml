@@ -1,0 +1,16 @@
+﻿<?xml version="1.0" encoding="utf-8" standalone="no" ?>
+<l10n>
+    <translationContributors>exekx</translationContributors>
+    <texts>
+        <text name="cp_player_unload_mod_title" text="Courseplay: プレイヤー排出"/>
+        <text name="cp_player_unload_mod_desc" text="プレイヤーが運転するコンバインをCourseplayアンローダーが自動的に排出できるようにします。"/>
+        <text name="cp_player_unload_called" text="Courseplayアンローダー '%s' をコンバインに呼び出しました。"/>
+        <text name="cp_player_unload_arrived" text="Courseplayアンローダー '%s' が排出パイプの下に到着しました。"/>
+        <text name="cp_player_unload_finished" text="Courseplayアンローダー '%s' の排出が完了し、出発しました。"/>
+        <text name="cp_player_unload_no_unloader" text="近くに待機中のCourseplayアンローダーが見つかりません。"/>
+        <text name="input_CP_PLAYER_UNLOAD_CALL" text="Courseplayアンローダーを呼ぶ"/>
+        <text name="input_CP_PLAYER_UNLOAD_TOGGLE" text="80%自動呼び出しの切り替え"/>
+        <text name="cp_player_unload_autocall_on" text="80%自動呼び出し: 有効"/>
+        <text name="cp_player_unload_autocall_off" text="80%自動呼び出し: 無効"/>
+    </texts>
+</l10n>

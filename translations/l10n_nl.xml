@@ -1,0 +1,16 @@
+﻿<?xml version="1.0" encoding="utf-8" standalone="no" ?>
+<l10n>
+    <translationContributors>exekx</translationContributors>
+    <texts>
+        <text name="cp_player_unload_mod_title" text="Courseplay: Speler lossen"/>
+        <text name="cp_player_unload_mod_desc" text="Stelt Courseplay-afvoerders in staat om automatisch combines te lossen die door de speler worden bestuurd."/>
+        <text name="cp_player_unload_called" text="Courseplay-afvoerder '%s' is naar je combine geroepen."/>
+        <text name="cp_player_unload_arrived" text="Courseplay-afvoerder '%s' staat onder de pijp van je combine."/>
+        <text name="cp_player_unload_finished" text="Courseplay-afvoerder '%s' is klaar met lossen en vertrokken."/>
+        <text name="cp_player_unload_no_unloader" text="Geen beschikbare Courseplay-afvoerder in de buurt gevonden."/>
+        <text name="input_CP_PLAYER_UNLOAD_CALL" text="Courseplay-afvoerder roepen"/>
+        <text name="input_CP_PLAYER_UNLOAD_TOGGLE" text="80% automatisch roepen in-/uitschakelen"/>
+        <text name="cp_player_unload_autocall_on" text="Automatisch roepen bij 80%: INGESCHAKELD"/>
+        <text name="cp_player_unload_autocall_off" text="Automatisch roepen bij 80%: UITGESCHAKELD"/>
+    </texts>
+</l10n>

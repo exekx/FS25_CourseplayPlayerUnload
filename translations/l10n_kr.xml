@@ -1,0 +1,16 @@
+﻿<?xml version="1.0" encoding="utf-8" standalone="no" ?>
+<l10n>
+    <translationContributors>exekx</translationContributors>
+    <texts>
+        <text name="cp_player_unload_mod_title" text="Courseplay: 플레이어 언로드"/>
+        <text name="cp_player_unload_mod_desc" text="Courseplay 언로더가 플레이어가 운전하는 콤바인을 자동으로 언로드할 수 있도록 합니다."/>
+        <text name="cp_player_unload_called" text="Courseplay 언로더 '%s'이(가) 콤바인으로 호출되었습니다."/>
+        <text name="cp_player_unload_arrived" text="Courseplay 언로더 '%s'이(가) 배출 파이프 아래에 도착했습니다."/>
+        <text name="cp_player_unload_finished" text="Courseplay 언로더 '%s'이(가) 언로드를 완료하고 출발했습니다."/>
+        <text name="cp_player_unload_no_unloader" text="근처에서 대기 중인 Courseplay 언로더를 찾을 수 없습니다."/>
+        <text name="input_CP_PLAYER_UNLOAD_CALL" text="Courseplay 언로더 호출"/>
+        <text name="input_CP_PLAYER_UNLOAD_TOGGLE" text="80% 자동 호출 전환"/>
+        <text name="cp_player_unload_autocall_on" text="80% 자동 호출: 활성화됨"/>
+        <text name="cp_player_unload_autocall_off" text="80% 자동 호출: 비활성화됨"/>
+    </texts>
+</l10n>

@@ -1,0 +1,16 @@
+﻿<?xml version="1.0" encoding="utf-8" standalone="no" ?>
+<l10n>
+    <translationContributors>exekx</translationContributors>
+    <texts>
+        <text name="cp_player_unload_mod_title" text="Courseplay: Разгрузка игрока"/>
+        <text name="cp_player_unload_mod_desc" text="Позволяет разгрузчикам Courseplay автоматически разгружать комбайн под управлением игрока."/>
+        <text name="cp_player_unload_called" text="Разгрузчик Courseplay '%s' вызван к вашему комбайну."/>
+        <text name="cp_player_unload_arrived" text="Разгрузчик Courseplay '%s' подъехал под шнек комбайна."/>
+        <text name="cp_player_unload_finished" text="Разгрузчик Courseplay '%s' завершил разгрузку и уехал."/>
+        <text name="cp_player_unload_no_unloader" text="Поблизости не найдено свободного разгрузчика Courseplay."/>
+        <text name="input_CP_PLAYER_UNLOAD_CALL" text="Вызвать разгрузчик Courseplay"/>
+        <text name="input_CP_PLAYER_UNLOAD_TOGGLE" text="Вкл/Выкл автовызов при 80%"/>
+        <text name="cp_player_unload_autocall_on" text="Автовызов при 80% заполнения: ВКЛЮЧЕН"/>
+        <text name="cp_player_unload_autocall_off" text="Автовызов при 80% заполнения: ВЫКЛЮЧЕН"/>
+    </texts>
+</l10n>

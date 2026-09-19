@@ -1,0 +1,116 @@
+﻿<?xml version="1.0" encoding="utf-8" standalone="no" ?>
+<modDesc descVersion="111">
+    <author>exekx</author>
+    <version>1.0.0.0</version>
+    <title>
+        <en>Courseplay: Unload Me</en>
+        <de>Courseplay: Spieler abtanken</de>
+        <uk>Courseplay: Розвантаження гравця</uk>
+        <fr>Courseplay: Décharger le joueur</fr>
+        <pl>Courseplay: Rozładunek gracza</pl>
+        <es>Courseplay: Descargar al jugador</es>
+        <it>Courseplay: Scarica il giocatore</it>
+        <pt>Courseplay: Descarregar jogador</pt>
+        <ru>Courseplay: Разгрузка игрока</ru>
+    </title>
+    <description>
+<en><![CDATA[An add-on for Courseplay that enables Courseplay AI unloaders to automatically approach, track, and unload player-driven combines!
+
+How Calling Works:
+- Opening the Pipe (Always Active): Unfolding your discharge pipe (with > 1% grain) is a direct physical signal that ALWAYS calls an unloader to your combine automatically! Folding the pipe tells the unloader to depart (or cancels the call if still driving to you).
+- Right Shift + I (80% Tank Auto-Call): By default, auto-calling on tank level is DISABLED. Pressing Right Shift + I ONLY enables/disables calling an unloader in advance when your grain tank reaches 80% (before opening the pipe).
+- Right Shift + U (Manual Instant Call): Immediately dispatches the nearest idle unloader at any time.
+
+Features:
+- Seamlessly connects human-driven combines with Courseplay combine unloader tractors.
+- Dynamic vector tracking keeps the tractor precisely positioned under the auger while you harvest.
+- Collision-free departure maneuvers when unloading finishes.
+
+Controls (Keyboard):
+- Right Shift + U: Call Courseplay unloader immediately.
+- Right Shift + I: Toggle 80% Tank Auto-Call ON / OFF (Disabled by default; opening the pipe always calls an unloader regardless of this setting).
+
+Requirements:
+- Requires Courseplay (FS25_Courseplay) installed and activated in the game.
+
+GitHub Repository:
+- https://github.com/exekx/FS25_CourseplayPlayerUnload
+
+Credits:
+- Author: exekx
+- Special thanks to Courseplay.devTeam for creating the Courseplay mod for Farming Simulator 25 (https://github.com/Courseplay/Courseplay_FS25).]]></en>
+
+<uk><![CDATA[Аддон для Courseplay, який дозволяє тракторам-розвантажувачам Courseplay автоматично під'їжджати, супроводжувати та розвантажувати комбайн, яким керує живий гравець!
+
+Як працює виклик трактора:
+- Відкриття труби (Працює ЗАВЖДИ): Розкладання вивантажувальної труби комбайна (коли в бункері є зерно > 1%) ЗАВЖДИ автоматично викликає розвантажувач, незалежно від будь-яких налаштувань! Складання труби сигналізує трактору завершити розвантаження та від'їхати (або скасовує рух, якщо він ще їде до вас).
+- Правий Shift + I (Авто-виклик на 80%): За замовчуванням ВИМКНЕНО. Комбінація Shift + I додає ТІЛЬКИ попередній виклик трактора, коли бункер комбайна наповнюється більше ніж на 80% (ще до того, як ви відкрили трубу).
+- Правий Shift + U (Ручний виклик): Миттєво викликає найближчого вільного розвантажувача в будь-який момент.
+
+Особливості:
+- Безшовна інтеграція комбайна гравця з тракторами-розвантажувачами Courseplay.
+- Динамічне векторне позиціонування точно утримує причіп під шнеком комбайна на ходу.
+- Плавний та безпечний від'їзд трактора після завершення вивантаження.
+
+Керування (Клавіатура):
+- Правий Shift + U: Викликати розвантажувач Courseplay негайно.
+- Правий Shift + I: Увімк/Вимк авто-виклик при 80% заповнення бункера (за замовчуванням вимкнено; відкриття труби викликає трактор завжди, незалежно від цієї клавіші).
+
+Вимоги:
+- Обов'язково потрібен встановлений та активований мод Courseplay (FS25_Courseplay).
+
+GitHub Репозиторій:
+- https://github.com/exekx/FS25_CourseplayPlayerUnload
+
+Подяки (Credits):
+- Автор аддону: exekx
+- Щира подяка команді Courseplay.devTeam за створення чудового моду Courseplay для Farming Simulator 25 (https://github.com/Courseplay/Courseplay_FS25).]]></uk>
+
+<de><![CDATA[Ein Add-on für Courseplay, das es Courseplay-Abfahrern ermöglicht, vom Spieler gesteuerte Mähdrescher automatisch anzufahren, zu begleiten und abzutanken!
+
+Wie der Abruf funktioniert:
+- Rohr ausfahren (Immer aktiv): Das Ausfahren des Abtankrohrs (bei Füllstand > 1%) ruft IMMER automatisch einen Abfahrer, unabhängig von allen Einstellungen! Das Einfahren des Rohrs beendet das Abtanken und schickt den Abfahrer weg (oder bricht die Anfahrt ab).
+- Rechte Umschalttaste + I (80% Tank-Auto-Ruf): Standardmäßig DEAKTIVIERT. Schaltet NUR den vorzeitigen automatischen Ruf ein/aus, wenn der Korntank mehr als 80% erreicht (noch vor dem Öffnen des Rohrs).
+- Rechte Umschalttaste + U (Manueller Sofortabruf): Ruft jederzeit sofort den nächsten freien Abfahrer.
+
+Steuerung:
+- Rechte Umschalttaste + U: Freien Courseplay-Abfahrer sofort rufen.
+- Rechte Umschalttaste + I: Auto-Ruf bei 80% Füllung EIN / AUS schalten (standardmäßig AUS; das Ausfahren des Rohrs ruft den Abfahrer immer).
+
+Anforderungen:
+- Erfordert installierten und aktiven Courseplay-Mod (FS25_Courseplay).
+
+GitHub Repository:
+- https://github.com/exekx/FS25_CourseplayPlayerUnload
+
+Credits:
+- Autor: exekx
+- Besonderer Dank an das Courseplay.devTeam für den großartigen Courseplay-Mod (https://github.com/Courseplay/Courseplay_FS25).]]></de>
+    </description>
+    <iconFilename>icon_courseplayPlayerUnload.dds</iconFilename>
+    <multiplayer supported="true" />
+    
+    <dependencies>
+        <dependency>FS25_Courseplay</dependency>
+    </dependencies>
+    
+    <l10n filenamePrefix="translations/l10n"/>
+    
+    <extraSourceFiles>
+        <sourceFile filename="src/main.lua" />
+    </extraSourceFiles>
+    
+    <actions>
+        <action name="CP_PLAYER_UNLOAD_CALL" category="VEHICLE" />
+        <action name="CP_PLAYER_UNLOAD_TOGGLE" category="VEHICLE" />
+    </actions>
+    
+    <inputBinding>
+        <actionBinding action="CP_PLAYER_UNLOAD_CALL">
+            <binding device="KB_MOUSE_DEFAULT" input="KEY_rshift KEY_u" />
+        </actionBinding>
+        <actionBinding action="CP_PLAYER_UNLOAD_TOGGLE">
+            <binding device="KB_MOUSE_DEFAULT" input="KEY_rshift KEY_i" />
+        </actionBinding>
+    </inputBinding>
+</modDesc>

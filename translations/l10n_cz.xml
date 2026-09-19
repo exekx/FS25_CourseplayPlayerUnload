@@ -1,0 +1,16 @@
+﻿<?xml version="1.0" encoding="utf-8" standalone="no" ?>
+<l10n>
+    <translationContributors>exekx</translationContributors>
+    <texts>
+        <text name="cp_player_unload_mod_title" text="Courseplay: Vyložit hráče"/>
+        <text name="cp_player_unload_mod_desc" text="Umožňuje odvozcům Courseplay automaticky odvážet kombajn řízený hráčem."/>
+        <text name="cp_player_unload_called" text="Odvozce Courseplay '%s' byl přivolán k vašemu kombajnu."/>
+        <text name="cp_player_unload_arrived" text="Odvozce Courseplay '%s' přijel pod rouru kombajnu."/>
+        <text name="cp_player_unload_finished" text="Odvozce Courseplay '%s' dokončil vykládku a odjíždí."/>
+        <text name="cp_player_unload_no_unloader" text="V dosahu nebyl nalezen žádný volný odvozce Courseplay."/>
+        <text name="input_CP_PLAYER_UNLOAD_CALL" text="Přivolat odvozce Courseplay"/>
+        <text name="input_CP_PLAYER_UNLOAD_TOGGLE" text="Přepnout automatické přivolání při 80%"/>
+        <text name="cp_player_unload_autocall_on" text="Automatické přivolání při 80%: ZAPNUTO"/>
+        <text name="cp_player_unload_autocall_off" text="Automatické přivolání při 80%: VYPNUTO"/>
+    </texts>
+</l10n>

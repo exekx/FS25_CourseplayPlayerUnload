@@ -1,0 +1,16 @@
+﻿<?xml version="1.0" encoding="utf-8" standalone="no" ?>
+<l10n>
+    <translationContributors>exekx</translationContributors>
+    <texts>
+        <text name="cp_player_unload_mod_title" text="Courseplay: Розвантаження гравця"/>
+        <text name="cp_player_unload_mod_desc" text="Дозволяє розвантажувачам Courseplay автоматично під'їжджати, коли комбайном керує гравець."/>
+        <text name="cp_player_unload_called" text="Розвантажувач Courseplay '%s' їде до вашого комбайна."/>
+        <text name="cp_player_unload_arrived" text="Розвантажувач Courseplay '%s' під'їхав під трубу комбайна."/>
+        <text name="cp_player_unload_finished" text="Розвантажувач Courseplay '%s' завершив розвантаження та від'їжджає."/>
+        <text name="cp_player_unload_no_unloader" text="Не знайдено вільного розвантажувача Courseplay поблизу."/>
+        <text name="input_CP_PLAYER_UNLOAD_CALL" text="Викликати розвантажувач Courseplay"/>
+        <text name="input_CP_PLAYER_UNLOAD_TOGGLE" text="Увімк/Вимк авто-виклик при 80%"/>
+        <text name="cp_player_unload_autocall_on" text="Авто-виклик при 80% заповнення: УВІМКНЕНО"/>
+        <text name="cp_player_unload_autocall_off" text="Авто-виклик при 80% заповнення: ВИМКНЕНО"/>
+    </texts>
+</l10n>

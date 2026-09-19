@@ -1,0 +1,16 @@
+﻿<?xml version="1.0" encoding="utf-8" standalone="no" ?>
+<l10n>
+    <translationContributors>exekx</translationContributors>
+    <texts>
+        <text name="cp_player_unload_mod_title" text="Courseplay: 卸載玩家"/>
+        <text name="cp_player_unload_mod_desc" text="允許 Courseplay 卸載車自動為玩家駕駛的聯合收割機進行卸載。"/>
+        <text name="cp_player_unload_called" text="已呼叫 Courseplay 卸載車 '%s' 前往您的收割機。"/>
+        <text name="cp_player_unload_arrived" text="Courseplay 卸載車 '%s' 已到達卸料管下方。"/>
+        <text name="cp_player_unload_finished" text="Courseplay 卸載車 '%s' 已完成卸載並離開。"/>
+        <text name="cp_player_unload_no_unloader" text="附近未找到閒置的 Courseplay 卸載車。"/>
+        <text name="input_CP_PLAYER_UNLOAD_CALL" text="呼叫 Courseplay 卸載車"/>
+        <text name="input_CP_PLAYER_UNLOAD_TOGGLE" text="切換 80% 容量自動呼叫"/>
+        <text name="cp_player_unload_autocall_on" text="80% 自動呼叫卸載車：已啟用"/>
+        <text name="cp_player_unload_autocall_off" text="80% 自動呼叫卸載車：已停用"/>
+    </texts>
+</l10n>

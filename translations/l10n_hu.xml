@@ -1,0 +1,16 @@
+﻿<?xml version="1.0" encoding="utf-8" standalone="no" ?>
+<l10n>
+    <translationContributors>exekx</translationContributors>
+    <texts>
+        <text name="cp_player_unload_mod_title" text="Courseplay: Játékos ürítése"/>
+        <text name="cp_player_unload_mod_desc" text="Lehetővé teszi a Courseplay szállítóknak, hogy automatikusan ürítsék a játékos által vezetett kombájnt."/>
+        <text name="cp_player_unload_called" text="A(z) '%s' Courseplay szállító a kombájnodhoz lett hívva."/>
+        <text name="cp_player_unload_arrived" text="A(z) '%s' Courseplay szállító a kombájn mellé érkezett."/>
+        <text name="cp_player_unload_finished" text="A(z) '%s' Courseplay szállító befejezte az ürítést és távozik."/>
+        <text name="cp_player_unload_no_unloader" text="Nem található szabad Courseplay szállító a közelben."/>
+        <text name="input_CP_PLAYER_UNLOAD_CALL" text="Courseplay szállító hívása"/>
+        <text name="input_CP_PLAYER_UNLOAD_TOGGLE" text="80%-os automatikus hívás be/ki"/>
+        <text name="cp_player_unload_autocall_on" text="Automatikus hívás 80%-nál: BEKAPCSOLVA"/>
+        <text name="cp_player_unload_autocall_off" text="Automatikus hívás 80%-nál: KIKAPCSOLVA"/>
+    </texts>
+</l10n>

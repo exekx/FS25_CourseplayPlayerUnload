@@ -1,0 +1,16 @@
+﻿<?xml version="1.0" encoding="utf-8" standalone="no" ?>
+<l10n>
+    <translationContributors>exekx</translationContributors>
+    <texts>
+        <text name="cp_player_unload_mod_title" text="Courseplay: Descargar al jugador"/>
+        <text name="cp_player_unload_mod_desc" text="Permite que los descargadores de Courseplay descarguen automáticamente las cosechadoras conducidas por el jugador."/>
+        <text name="cp_player_unload_called" text="El descargador Courseplay '%s' ha sido llamado a tu cosechadora."/>
+        <text name="cp_player_unload_arrived" text="El descargador Courseplay '%s' está junto a tu cosechadora."/>
+        <text name="cp_player_unload_finished" text="El descargador Courseplay '%s' ha terminado de descargar y se retira."/>
+        <text name="cp_player_unload_no_unloader" text="No se encontró ningún descargador de Courseplay disponible cerca."/>
+        <text name="input_CP_PLAYER_UNLOAD_CALL" text="Llamar descargador de Courseplay"/>
+        <text name="input_CP_PLAYER_UNLOAD_TOGGLE" text="Alternar llamada auto al 80%"/>
+        <text name="cp_player_unload_autocall_on" text="Llamada automática al 80%: ACTIVADA"/>
+        <text name="cp_player_unload_autocall_off" text="Llamada automática al 80%: DESACTIVADA"/>
+    </texts>
+</l10n>

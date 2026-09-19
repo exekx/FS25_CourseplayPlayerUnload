@@ -1,0 +1,16 @@
+﻿<?xml version="1.0" encoding="utf-8" standalone="no" ?>
+<l10n>
+    <translationContributors>exekx</translationContributors>
+    <texts>
+        <text name="cp_player_unload_mod_title" text="Courseplay: Décharger le joueur"/>
+        <text name="cp_player_unload_mod_desc" text="Permet aux chauffeurs Courseplay de décharger automatiquement les moissonneuses conduites par le joueur."/>
+        <text name="cp_player_unload_called" text="Le chauffeur Courseplay '%s' a été appelé vers votre moissonneuse."/>
+        <text name="cp_player_unload_arrived" text="Le chauffeur Courseplay '%s' est positionné sous la buse."/>
+        <text name="cp_player_unload_finished" text="Le chauffeur Courseplay '%s' a terminé le déchargement et repart."/>
+        <text name="cp_player_unload_no_unloader" text="Aucun chauffeur Courseplay disponible à proximité."/>
+        <text name="input_CP_PLAYER_UNLOAD_CALL" text="Appeler le chauffeur Courseplay"/>
+        <text name="input_CP_PLAYER_UNLOAD_TOGGLE" text="Basculer l'appel auto à 80%"/>
+        <text name="cp_player_unload_autocall_on" text="Appel automatique à 80%: ACTIVÉ"/>
+        <text name="cp_player_unload_autocall_off" text="Appel automatique à 80%: DÉSACTIVÉ"/>
+    </texts>
+</l10n>

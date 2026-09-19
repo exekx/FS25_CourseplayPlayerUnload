@@ -1,0 +1,16 @@
+﻿<?xml version="1.0" encoding="utf-8" standalone="no" ?>
+<l10n>
+    <translationContributors>exekx</translationContributors>
+    <texts>
+        <text name="cp_player_unload_mod_title" text="Courseplay: Descarregar jogador"/>
+        <text name="cp_player_unload_mod_desc" text="Permite que os descarregadores do Courseplay descarreguem automaticamente colheitadeiras conduzidas pelo jogador."/>
+        <text name="cp_player_unload_called" text="O descarregador Courseplay '%s' foi chamado para a sua colheitadeira."/>
+        <text name="cp_player_unload_arrived" text="O descarregador Courseplay '%s' está ao lado da sua colheitadeira."/>
+        <text name="cp_player_unload_finished" text="O descarregador Courseplay '%s' terminou de descarregar e partiu."/>
+        <text name="cp_player_unload_no_unloader" text="Nenhum descarregador Courseplay disponível por perto."/>
+        <text name="input_CP_PLAYER_UNLOAD_CALL" text="Chamar descarregador Courseplay"/>
+        <text name="input_CP_PLAYER_UNLOAD_TOGGLE" text="Alternar chamada auto a 80%"/>
+        <text name="cp_player_unload_autocall_on" text="Chamada automática a 80%: ATIVADA"/>
+        <text name="cp_player_unload_autocall_off" text="Chamada automática a 80%: DESATIVADA"/>
+    </texts>
+</l10n>

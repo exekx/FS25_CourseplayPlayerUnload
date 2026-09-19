@@ -1,0 +1,16 @@
+﻿<?xml version="1.0" encoding="utf-8" standalone="no" ?>
+<l10n>
+    <translationContributors>exekx</translationContributors>
+    <texts>
+        <text name="cp_player_unload_mod_title" text="Courseplay: Tøm tresker"/>
+        <text name="cp_player_unload_mod_desc" text="Lar Courseplay-sjåfører automatisk tømme skurtreskere som kjøres av spilleren."/>
+        <text name="cp_player_unload_called" text="Courseplay-sjåfør '%s' er tilkalt til skurtreskeren din."/>
+        <text name="cp_player_unload_arrived" text="Courseplay-sjåfør '%s' er ved siden av skurtreskeren din."/>
+        <text name="cp_player_unload_finished" text="Courseplay-sjåfør '%s' har tømt ferdig og kjører av sted."/>
+        <text name="cp_player_unload_no_unloader" text="Ingen ledig Courseplay-sjåfør funnet i nærheten."/>
+        <text name="input_CP_PLAYER_UNLOAD_CALL" text="Tilkall Courseplay-sjåfør"/>
+        <text name="input_CP_PLAYER_UNLOAD_TOGGLE" text="Slå av/på 80% automatisk tilkalling"/>
+        <text name="cp_player_unload_autocall_on" text="Automatisk tilkalling ved 80%: AKTIVERT"/>
+        <text name="cp_player_unload_autocall_off" text="Automatisk tilkalling ved 80%: DEAKTIVERT"/>
+    </texts>
+</l10n>
