@@ -2,7 +2,7 @@
 <l10n>
     <translationContributors>exekx</translationContributors>
     <texts>
-        <text name="cp_player_unload_mod_title" text="Courseplay: Töm tröska"/>
+        <text name="cp_player_unload_mod_title" text="Courseplay: Unload Me"/>
         <text name="cp_player_unload_mod_desc" text="Tillåter Courseplay-förare att automatiskt tömma tröskor som körs av spelaren."/>
         <text name="cp_player_unload_called" text="Courseplay-förare '%s' har kallats till din tröska."/>
         <text name="cp_player_unload_arrived" text="Courseplay-förare '%s' är vid din tröska."/>

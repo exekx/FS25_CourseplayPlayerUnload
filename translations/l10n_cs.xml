@@ -2,7 +2,7 @@
 <l10n>
     <translationContributors>exekx</translationContributors>
     <texts>
-        <text name="cp_player_unload_mod_title" text="Courseplay: Vyložit hráče"/>
+        <text name="cp_player_unload_mod_title" text="Courseplay: Unload Me"/>
         <text name="cp_player_unload_mod_desc" text="Umožňuje odvozcům Courseplay automaticky odvážet kombajn řízený hráčem."/>
         <text name="cp_player_unload_called" text="Odvozce Courseplay '%s' byl přivolán k vašemu kombajnu."/>
         <text name="cp_player_unload_arrived" text="Odvozce Courseplay '%s' přijel pod rouru kombajnu."/>

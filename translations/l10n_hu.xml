@@ -2,7 +2,7 @@
 <l10n>
     <translationContributors>exekx</translationContributors>
     <texts>
-        <text name="cp_player_unload_mod_title" text="Courseplay: Játékos ürítése"/>
+        <text name="cp_player_unload_mod_title" text="Courseplay: Unload Me"/>
         <text name="cp_player_unload_mod_desc" text="Lehetővé teszi a Courseplay szállítóknak, hogy automatikusan ürítsék a játékos által vezetett kombájnt."/>
         <text name="cp_player_unload_called" text="A(z) '%s' Courseplay szállító a kombájnodhoz lett hívva."/>
         <text name="cp_player_unload_arrived" text="A(z) '%s' Courseplay szállító a kombájn mellé érkezett."/>

@@ -4,14 +4,6 @@
     <version>1.0.0.0</version>
     <title>
         <en>Courseplay: Unload Me</en>
-        <de>Courseplay: Spieler abtanken</de>
-        <uk>Courseplay: Розвантаження гравця</uk>
-        <fr>Courseplay: Décharger le joueur</fr>
-        <pl>Courseplay: Rozładunek gracza</pl>
-        <es>Courseplay: Descargar al jugador</es>
-        <it>Courseplay: Scarica il giocatore</it>
-        <pt>Courseplay: Descarregar jogador</pt>
-        <ru>Courseplay: Разгрузка игрока</ru>
     </title>
     <description>
 <en><![CDATA[An add-on for Courseplay that enables Courseplay AI unloaders to automatically approach, track, and unload player-driven combines!

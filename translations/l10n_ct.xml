@@ -2,7 +2,7 @@
 <l10n>
     <translationContributors>exekx</translationContributors>
     <texts>
-        <text name="cp_player_unload_mod_title" text="Courseplay: 卸載玩家"/>
+        <text name="cp_player_unload_mod_title" text="Courseplay: Unload Me"/>
         <text name="cp_player_unload_mod_desc" text="允許 Courseplay 卸載車自動為玩家駕駛的聯合收割機進行卸載。"/>
         <text name="cp_player_unload_called" text="已呼叫 Courseplay 卸載車 '%s' 前往您的收割機。"/>
         <text name="cp_player_unload_arrived" text="Courseplay 卸載車 '%s' 已到達卸料管下方。"/>

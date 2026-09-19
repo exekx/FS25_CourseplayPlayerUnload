@@ -2,7 +2,7 @@
 <l10n>
     <translationContributors>exekx</translationContributors>
     <texts>
-        <text name="cp_player_unload_mod_title" text="Courseplay: Puimurin tyhjennys"/>
+        <text name="cp_player_unload_mod_title" text="Courseplay: Unload Me"/>
         <text name="cp_player_unload_mod_desc" text="Mahdollistaa Courseplay-purkukuljettajien automaattisen puimurin tyhjennyksen pelaajan ajaessa."/>
         <text name="cp_player_unload_called" text="Courseplay-kuljettaja '%s' on kutsuttu puimurillesi."/>
         <text name="cp_player_unload_arrived" text="Courseplay-kuljettaja '%s' on puimurin putken alla."/>

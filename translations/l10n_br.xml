@@ -2,7 +2,7 @@
 <l10n>
     <translationContributors>exekx</translationContributors>
     <texts>
-        <text name="cp_player_unload_mod_title" text="Courseplay: Descarregar jogador"/>
+        <text name="cp_player_unload_mod_title" text="Courseplay: Unload Me"/>
         <text name="cp_player_unload_mod_desc" text="Permite que os descarregadores do Courseplay descarreguem automaticamente colheitadeiras conduzidas pelo jogador."/>
         <text name="cp_player_unload_called" text="O descarregador Courseplay '%s' foi chamado para a sua colheitadeira."/>
         <text name="cp_player_unload_arrived" text="O descarregador Courseplay '%s' está ao lado da sua colheitadeira."/>

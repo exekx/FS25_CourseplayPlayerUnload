@@ -1,4 +1,4 @@
-﻿-- =============================================================
+-- =============================================================
 -- FS25_CourseplayPlayerUnload: CP_UnloaderHooks.lua
 -- Author: exekx
 -- Description: Courseplay integration hooks & ActionEvents
@@ -88,8 +88,7 @@ function CP_UnloaderHooks.init()
         print("CP_PlayerUnload: Hooked AIDriveStrategyCombineCourse.isActiveCpCombine")
     end
 
-    -- 5. Hook CpAIWorker specialization methods
-    -- DO NOT hook CpAIWorker.getIsCpActive - player is NOT an AI worker!
+    -- 5. Hook CpAIWorker methods
     if CpAIWorker then
         if CpAIWorker.getCpDriveStrategy then
             CpAIWorker.getCpDriveStrategy = Utils.overwrittenFunction(
@@ -196,11 +195,26 @@ function CP_UnloaderHooks.init()
         print("CP_PlayerUnload: Hooked Vehicle getCpDriveStrategy & getIsCpDriveToFieldWorkActive")
     end
 
-    -- 8. Hook Vehicle.onRegisterActionEvents for input bindings
-    Vehicle.onRegisterActionEvents = Utils.appendedFunction(
-        Vehicle.onRegisterActionEvents,
-        CP_UnloaderHooks.onRegisterActionEvents
-    )
+    -- 8. Hook Vehicle & Combine onRegisterActionEvents for input bindings
+    if Combine and Combine.onRegisterActionEvents then
+        Combine.onRegisterActionEvents = Utils.appendedFunction(
+            Combine.onRegisterActionEvents,
+            CP_UnloaderHooks.onRegisterActionEvents
+        )
+    end
+    if Vehicle and Vehicle.onRegisterActionEvents then
+        Vehicle.onRegisterActionEvents = Utils.appendedFunction(
+            Vehicle.onRegisterActionEvents,
+            CP_UnloaderHooks.onRegisterActionEvents
+        )
+    end
+    if g_vehicleTypeManager and g_vehicleTypeManager.vehicleTypes then
+        for _, typeDef in pairs(g_vehicleTypeManager.vehicleTypes) do
+            if SpecializationUtil.hasSpecialization(Combine, typeDef.specializations) then
+                SpecializationUtil.registerEventListener(typeDef, "onRegisterActionEvents", CP_UnloaderHooks)
+            end
+        end
+    end
     print("CP_PlayerUnload: Registered vehicle action events")
 
     -- 9. Explicitly protect rhm_Combine.isAiWorkerActive if FS25_RealisticHarvesting is loaded
@@ -244,7 +258,11 @@ function CP_UnloaderHooks.hookRhm()
 end
 
 function CP_UnloaderHooks.onRegisterActionEvents(vehicle, isActiveForInput, isActiveForInputIgnoreSelection)
-    if not vehicle.spec_combine then
+    if not vehicle or not vehicle.spec_combine then
+        return
+    end
+
+    if not vehicle.isClient then
         return
     end
 
@@ -271,7 +289,10 @@ function CP_UnloaderHooks.onRegisterActionEvents(vehicle, isActiveForInput, isAc
         )
         if eventId then
             g_inputBinding:setActionEventTextPriority(eventId, GS_PRIO_HIGH)
-            g_inputBinding:setActionEventText(eventId, g_i18n:getText("input_CP_PLAYER_UNLOAD_CALL") or "Call CP Unloader")
+            local txt = (g_i18n and g_i18n:hasText("input_CP_PLAYER_UNLOAD_CALL") and g_i18n:getText("input_CP_PLAYER_UNLOAD_CALL")) or "Call CP Unloader"
+            g_inputBinding:setActionEventText(eventId, txt)
+            g_inputBinding:setActionEventActive(eventId, true)
+            g_inputBinding:setActionEventTextVisibility(eventId, true)
         end
     end
 
@@ -287,7 +308,10 @@ function CP_UnloaderHooks.onRegisterActionEvents(vehicle, isActiveForInput, isAc
         )
         if eventId then
             g_inputBinding:setActionEventTextPriority(eventId, GS_PRIO_NORMAL)
-            g_inputBinding:setActionEventText(eventId, g_i18n:getText("input_CP_PLAYER_UNLOAD_TOGGLE") or "Toggle Auto-Call")
+            local txt = (g_i18n and g_i18n:hasText("input_CP_PLAYER_UNLOAD_TOGGLE") and g_i18n:getText("input_CP_PLAYER_UNLOAD_TOGGLE")) or "Toggle Auto-Call"
+            g_inputBinding:setActionEventText(eventId, txt)
+            g_inputBinding:setActionEventActive(eventId, true)
+            g_inputBinding:setActionEventTextVisibility(eventId, true)
         end
     end
 end

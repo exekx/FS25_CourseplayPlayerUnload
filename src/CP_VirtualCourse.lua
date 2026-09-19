@@ -1,4 +1,4 @@
-﻿-- =============================================================
+-- =============================================================
 -- FS25_CourseplayPlayerUnload: CP_VirtualCourse.lua
 -- Author: exekx
 -- Description: Generates a virtual forward course for human-driven combines
@@ -12,7 +12,7 @@ function CP_VirtualCourse.new(combine)
     self.combine = combine
     self.course = nil
     self.lastUpdateTime = 0
-    self.updateIntervalMs = 500 -- Regenerate/advance course twice a second
+    self.updateIntervalMs = 500 -- Advance virtual course twice a second
     self:update()
     return self
 end
@@ -29,14 +29,56 @@ function CP_VirtualCourse:update()
     self.lastUpdateTime = currentTime
 
     local dirNode = self.combine:getAIDirectionNode() or self.combine.rootNode
-    local Course = CP_GetCpClass(Course)
+    local Course = CP_GetCpClass("Course")
 
-    if Course and Course.createStraightForwardCourse then
-        -- Generate 150 meters of straight waypoints ahead of player combine
-        self.course = Course.createStraightForwardCourse(self.combine, 150, 0, dirNode)
-    elseif Course and Course.createFromNode then
-        self.course = Course.createFromNode(self.combine, dirNode, 0, 0, 150, 5, false)
+    -- Generate 50 points (100 meters) straight ahead in combine coordinate frame
+    local rawWaypoints = {}
+    for i = 0, 50 do
+        local dist = i * 2.0
+        local wx, _, wz = localToWorld(dirNode, 0, 0, dist)
+        table.insert(rawWaypoints, {
+            x = wx,
+            z = wz,
+            rev = false
+        })
     end
+
+    -- Attempt to instantiate official Courseplay Course object
+    if Course ~= nil and type(Course) == "table" then
+        local success, c = pcall(Course, self.combine, rawWaypoints, true)
+        if success and c ~= nil and type(c.copy) == "function" then
+            self.course = c
+            return self.course
+        end
+    end
+
+    -- Robust fallback object implementing all required Course methods
+    self.course = {
+        vehicle = self.combine,
+        currentWaypoint = 1,
+        lastPassedWaypoint = 1,
+        waypoints = rawWaypoints,
+        offsetX = 0,
+        offsetZ = 0,
+        copy = function(s, vehicle)
+            local copyCourse = {}
+            for k, v in pairs(s) do copyCourse[k] = v end
+            copyCourse.vehicle = vehicle or s.vehicle
+            return copyCourse
+        end,
+        setOffset = function(s, ox, oz)
+            s.offsetX = ox or 0
+            s.offsetZ = oz or 0
+        end,
+        getCurrentWaypointIx = function() return 1 end,
+        getNumberOfWaypoints = function() return #rawWaypoints end,
+        intersects = function() return nil end,
+        getOffset = function(s) return s.offsetX or 0 end,
+        getLastPassedWaypointIx = function() return 1 end,
+        isReverseAt = function() return false end,
+        getWaypoint = function(s, ix) return rawWaypoints[ix] or rawWaypoints[1] end,
+        setCurrentWaypointIx = function(s, ix) s.currentWaypoint = ix end
+    }
 
     return self.course
 end
@@ -44,23 +86,6 @@ end
 function CP_VirtualCourse:getCourse()
     if self.course == nil then
         self:update()
-    end
-    if self.course == nil then
-        -- Safe fallback object with required Course API methods
-        return {
-            currentWaypoint = 1,
-            lastPassedWaypoint = 1,
-            waypoints = {
-                { x = 0, z = 0, dToHere = 0, rev = false },
-                { x = 0, z = 100, dToHere = 100, rev = false }
-            },
-            getCurrentWaypointIx = function() return 1 end,
-            getNumberOfWaypoints = function() return 2 end,
-            intersects = function() return nil end,
-            getOffset = function() return 0 end,
-            getLastPassedWaypointIx = function() return 1 end,
-            isReverseAt = function() return false end
-        }
     end
     return self.course
 end

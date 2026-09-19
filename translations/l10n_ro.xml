@@ -2,7 +2,7 @@
 <l10n>
     <translationContributors>exekx</translationContributors>
     <texts>
-        <text name="cp_player_unload_mod_title" text="Courseplay: Descărcare jucător"/>
+        <text name="cp_player_unload_mod_title" text="Courseplay: Unload Me"/>
         <text name="cp_player_unload_mod_desc" text="Permite descărcătorilor Courseplay să descarce automat combinele conduse de jucător."/>
         <text name="cp_player_unload_called" text="Descărcătorul Courseplay '%s' a fost chemat la combina ta."/>
         <text name="cp_player_unload_arrived" text="Descărcătorul Courseplay '%s' a ajuns lângă combina ta."/>

@@ -2,7 +2,7 @@
 <l10n>
     <translationContributors>exekx</translationContributors>
     <texts>
-        <text name="cp_player_unload_mod_title" text="Courseplay: Tøm mejetærsker"/>
+        <text name="cp_player_unload_mod_title" text="Courseplay: Unload Me"/>
         <text name="cp_player_unload_mod_desc" text="Gør det muligt for Courseplay-frakørere automatisk at tømme mejetærskere, der køres af spilleren."/>
         <text name="cp_player_unload_called" text="Courseplay-frakører '%s' er blevet kaldt til din mejetærsker."/>
         <text name="cp_player_unload_arrived" text="Courseplay-frakører '%s' er ankommet ved siden af din mejetærsker."/>

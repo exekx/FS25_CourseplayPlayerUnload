@@ -2,7 +2,7 @@
 <l10n>
     <translationContributors>exekx</translationContributors>
     <texts>
-        <text name="cp_player_unload_mod_title" text="Courseplay: Décharger le joueur"/>
+        <text name="cp_player_unload_mod_title" text="Courseplay: Unload Me"/>
         <text name="cp_player_unload_mod_desc" text="Permet aux chauffeurs Courseplay de décharger automatiquement les moissonneuses conduites par le joueur."/>
         <text name="cp_player_unload_called" text="Le chauffeur Courseplay '%s' a été appelé vers votre moissonneuse."/>
         <text name="cp_player_unload_arrived" text="Le chauffeur Courseplay '%s' est positionné sous la buse."/>

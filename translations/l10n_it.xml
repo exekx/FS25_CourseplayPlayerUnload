@@ -2,7 +2,7 @@
 <l10n>
     <translationContributors>exekx</translationContributors>
     <texts>
-        <text name="cp_player_unload_mod_title" text="Courseplay: Scarica il giocatore"/>
+        <text name="cp_player_unload_mod_title" text="Courseplay: Unload Me"/>
         <text name="cp_player_unload_mod_desc" text="Consente agli scaricatori di Courseplay di scaricare automaticamente le mietitrebbie guidate dal giocatore."/>
         <text name="cp_player_unload_called" text="Lo scaricatore Courseplay '%s' è stato chiamato alla tua mietitrebbia."/>
         <text name="cp_player_unload_arrived" text="Lo scaricatore Courseplay '%s' è posizionato sotto il tubo."/>

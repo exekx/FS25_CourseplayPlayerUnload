@@ -2,7 +2,7 @@
 <l10n>
     <translationContributors>exekx</translationContributors>
     <texts>
-        <text name="cp_player_unload_mod_title" text="Courseplay: Разгрузка игрока"/>
+        <text name="cp_player_unload_mod_title" text="Courseplay: Unload Me"/>
         <text name="cp_player_unload_mod_desc" text="Позволяет разгрузчикам Courseplay автоматически разгружать комбайн под управлением игрока."/>
         <text name="cp_player_unload_called" text="Разгрузчик Courseplay '%s' вызван к вашему комбайну."/>
         <text name="cp_player_unload_arrived" text="Разгрузчик Courseplay '%s' подъехал под шнек комбайна."/>

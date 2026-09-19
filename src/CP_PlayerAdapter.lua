@@ -53,6 +53,9 @@ function CP_PlayerAdapter.new(combine)
     self.unloaderRendezvousWaypointIx = 1
     self.isVirtualCpStrategy = true
     self.remainingTime = { getText = function() return "" end }
+    self.lastPipeOpenState = false
+    self.pipeCallEligible = false
+    self.lastDepartedTime = 0
     return self
 end
 
@@ -60,6 +63,15 @@ function CP_PlayerAdapter:update(dt)
     if self.virtualCourse then
         self.virtualCourse:update()
     end
+
+    local pipeOpen = self:isPipeOpen()
+    if pipeOpen and not self.lastPipeOpenState then
+        -- Player just unfolded pipe -> mark as eligible for unloader call
+        self.pipeCallEligible = true
+    elseif not pipeOpen then
+        self.pipeCallEligible = false
+    end
+    self.lastPipeOpenState = pipeOpen
 end
 
 function CP_PlayerAdapter:updateCpStatus(status)
@@ -103,9 +115,7 @@ function CP_PlayerAdapter:requestToIgnoreProximity(vehicle)
 end
 
 function CP_PlayerAdapter:isUnloadFinished()
-    local pct = self:getFillLevelPercentage()
-    -- Unload finished when grain tank is empty or pipe stopped discharging and fill level is below 90%
-    return pct < 1.0 or (not self:isDischarging() and pct < 90)
+    return self:getFillLevelPercentage() <= 0.1
 end
 
 function CP_PlayerAdapter:isWaitingForUnloadAfterCourseEnded()
@@ -279,21 +289,25 @@ function CP_PlayerAdapter:getPipeOffset(additionalOffsetX, additionalOffsetZ)
     local pipeOffsetX = 5.5
     local pipeOffsetZ = 0.0
 
-    -- 1. Check Courseplay vehicle settings if available
-    if self.combine.getCpSettings and self.combine:getCpSettings().pipeOffsetX then
-        local valX = self.combine:getCpSettings().pipeOffsetX:getValue()
-        local valZ = self.combine:getCpSettings().pipeOffsetZ:getValue()
-        if valX and math.abs(valX) > 1.0 then
-            pipeOffsetX = valX
-            pipeOffsetZ = valZ or 0.0
+    -- 1. Check Courseplay vehicle settings if available safely
+    if self.combine.getCpSettings then
+        local cpSettings = self.combine:getCpSettings()
+        if cpSettings and cpSettings.pipeOffsetX and cpSettings.pipeOffsetZ then
+            local valX = cpSettings.pipeOffsetX:getValue()
+            local valZ = cpSettings.pipeOffsetZ:getValue()
+            if valX and math.abs(valX) > 1.0 then
+                pipeOffsetX = valX
+                pipeOffsetZ = valZ or 0.0
+            end
         end
+    end
+
     -- 2. Physical pipe discharge node measurement in combine reference frame
-    elseif self.combine.getCurrentDischargeNode then
+    if math.abs(pipeOffsetX) <= 1.0 and self.combine.getCurrentDischargeNode then
         local dischargeNode = self.combine:getCurrentDischargeNode()
         if dischargeNode and dischargeNode.node then
             local refNode = self:getPipeOffsetReferenceNode()
             local dx, _, dz = localToLocal(dischargeNode.node, refNode, 0, 0, 0)
-            -- Only use physical coordinates if pipe is actually extended (dx > 3m from center)
             if math.abs(dx) > 3.0 then
                 pipeOffsetX = dx
                 pipeOffsetZ = dz
@@ -301,7 +315,6 @@ function CP_PlayerAdapter:getPipeOffset(additionalOffsetX, additionalOffsetZ)
         end
     end
 
-    -- Guarantee valid numbers so localToLocal never fails
     pipeOffsetX = pipeOffsetX or 5.5
     pipeOffsetZ = pipeOffsetZ or 0.0
 

@@ -2,7 +2,7 @@
 <l10n>
     <translationContributors>exekx</translationContributors>
     <texts>
-        <text name="cp_player_unload_mod_title" text="Courseplay: Tøm tresker"/>
+        <text name="cp_player_unload_mod_title" text="Courseplay: Unload Me"/>
         <text name="cp_player_unload_mod_desc" text="Lar Courseplay-sjåfører automatisk tømme skurtreskere som kjøres av spilleren."/>
         <text name="cp_player_unload_called" text="Courseplay-sjåfør '%s' er tilkalt til skurtreskeren din."/>
         <text name="cp_player_unload_arrived" text="Courseplay-sjåfør '%s' er ved siden av skurtreskeren din."/>

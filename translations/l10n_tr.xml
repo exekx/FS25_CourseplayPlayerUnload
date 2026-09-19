@@ -2,7 +2,7 @@
 <l10n>
     <translationContributors>exekx</translationContributors>
     <texts>
-        <text name="cp_player_unload_mod_title" text="Courseplay: Oyuncuyu Boşalt"/>
+        <text name="cp_player_unload_mod_title" text="Courseplay: Unload Me"/>
         <text name="cp_player_unload_mod_desc" text="Courseplay taşıyıcılarının oyuncu tarafından sürülen biçerdöverleri otomatik olarak boşaltmasını sağlar."/>
         <text name="cp_player_unload_called" text="Courseplay taşıyıcısı '%s' biçerdöverinize çağrıldı."/>
         <text name="cp_player_unload_arrived" text="Courseplay taşıyıcısı '%s' biçerdöverinizin yanına ulaştı."/>

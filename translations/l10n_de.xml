@@ -2,7 +2,7 @@
 <l10n>
     <translationContributors>exekx</translationContributors>
     <texts>
-        <text name="cp_player_unload_mod_title" text="Courseplay: Spieler abtanken"/>
+        <text name="cp_player_unload_mod_title" text="Courseplay: Unload Me"/>
         <text name="cp_player_unload_mod_desc" text="Ermöglicht es Courseplay-Abfahrern, vom Spieler gesteuerte Mähdrescher automatisch abzutanken."/>
         <text name="cp_player_unload_called" text="Courseplay-Abfahrer '%s' wurde zu deinem Drescher gerufen."/>
         <text name="cp_player_unload_arrived" text="Courseplay-Abfahrer '%s' ist am Drescher angekommen."/>

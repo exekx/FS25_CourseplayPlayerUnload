@@ -2,7 +2,7 @@
 <l10n>
     <translationContributors>exekx</translationContributors>
     <texts>
-        <text name="cp_player_unload_mod_title" text="Courseplay: Speler lossen"/>
+        <text name="cp_player_unload_mod_title" text="Courseplay: Unload Me"/>
         <text name="cp_player_unload_mod_desc" text="Stelt Courseplay-afvoerders in staat om automatisch combines te lossen die door de speler worden bestuurd."/>
         <text name="cp_player_unload_called" text="Courseplay-afvoerder '%s' is naar je combine geroepen."/>
         <text name="cp_player_unload_arrived" text="Courseplay-afvoerder '%s' staat onder de pijp van je combine."/>

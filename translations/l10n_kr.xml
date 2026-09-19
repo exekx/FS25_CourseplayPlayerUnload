@@ -2,7 +2,7 @@
 <l10n>
     <translationContributors>exekx</translationContributors>
     <texts>
-        <text name="cp_player_unload_mod_title" text="Courseplay: 플레이어 언로드"/>
+        <text name="cp_player_unload_mod_title" text="Courseplay: Unload Me"/>
         <text name="cp_player_unload_mod_desc" text="Courseplay 언로더가 플레이어가 운전하는 콤바인을 자동으로 언로드할 수 있도록 합니다."/>
         <text name="cp_player_unload_called" text="Courseplay 언로더 '%s'이(가) 콤바인으로 호출되었습니다."/>
         <text name="cp_player_unload_arrived" text="Courseplay 언로더 '%s'이(가) 배출 파이프 아래에 도착했습니다."/>
