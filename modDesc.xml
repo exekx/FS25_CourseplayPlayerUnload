@@ -1,23 +1,29 @@
-﻿<?xml version="1.0" encoding="utf-8" standalone="no" ?>
+<?xml version="1.0" encoding="utf-8" standalone="no" ?>
 <modDesc descVersion="111">
     <author>exekx</author>
-    <version>1.0.0.0</version>
+    <version>1.1.1.0</version>
     <title>
         <en>Courseplay: Unload Me</en>
         <de>Courseplay: Unload Me</de>
         <fr>Courseplay: Unload Me</fr>
     </title>
     <description>
-<en><![CDATA[An add-on for Courseplay that enables Courseplay AI unloaders to automatically approach, track, and unload player-driven combines!
+<en><![CDATA[An add-on for Courseplay that enables Courseplay AI unloaders to automatically approach, track, and unload player-driven combines and forage harvesters!
+
+What's New in v1.1.1.0:
+- Full support for modular carrier systems like NEXAT (NexCo harvesting module).
+- Fixed crash 'attempt to call missing method getAIDirectionNode' on vehicles lacking AIVehicle specialization.
+- Enhanced Forage Harvester positioning: Shifted unloader tractor 5 meters further back alongside choppers, ensuring optimal trailer alignment under the spout and generous header safety clearance.
+- Full compatibility with standard tipping trailers, silage wagons, and auger chaser bins.
 
 How Calling Works:
-- Opening the Pipe (Always Active): Unfolding your discharge pipe (with > 1% grain) is a direct physical signal that ALWAYS calls an unloader to your combine automatically! Folding the pipe tells the unloader to depart (or cancels the call if still driving to you).
+- Opening the Pipe (Always Active): Unfolding your discharge pipe/spout (or turning on cutter for forage harvesters) is a direct physical signal that ALWAYS calls an unloader to your machine automatically! Folding the pipe tells the unloader to depart (or cancels the call if still driving to you).
 - Right Shift + I (80% Tank Auto-Call): By default, auto-calling on tank level is DISABLED. Pressing Right Shift + I ONLY enables/disables calling an unloader in advance when your grain tank reaches 80% (before opening the pipe).
 - Right Shift + U (Manual Instant Call): Immediately dispatches the nearest idle unloader at any time.
 
 Features:
-- Seamlessly connects human-driven combines with Courseplay combine unloader tractors.
-- Dynamic vector tracking keeps the tractor precisely positioned under the auger while you harvest.
+- Seamlessly connects human-driven combines and forage harvesters with Courseplay combine unloader tractors.
+- Dynamic vector tracking keeps the tractor precisely positioned under the auger/spout while you harvest.
 - Collision-free departure maneuvers when unloading finishes.
 
 Controls (Keyboard):
@@ -34,21 +40,27 @@ Credits:
 - Author: exekx
 - Special thanks to Courseplay.devTeam for creating the Courseplay mod for Farming Simulator 25 (https://github.com/Courseplay/Courseplay_FS25).]]></en>
 
-<de><![CDATA[Ein Add-on für Courseplay, das es Courseplay-Abfahrern ermöglicht, vom Spieler gesteuerte Mähdrescher automatisch anzufahren, zu begleiten und abzutanken!
+<de><![CDATA[Ein Add-on für Courseplay, das es Courseplay-Abfahrern ermöglicht, vom Spieler gesteuerte Mähdrescher und Feldhäcksler automatisch anzufahren, zu begleiten und abzutanken!
+
+Neu in v1.1.0.0:
+- Volle Unterstützung für Feldhäcksler (Maschinen ohne Korntank): Das Einschalten des Schneidwerks/Häckslers oder das Ausfahren des Auswurfbogens ruft automatisch einen Abfahrer, der kontinuierlich nebenherfährt!
+- Verbesserte Anhängerausrichtung: Präzise Erkennung des Abtankpunkts für alle Anhängertypen (Kippanhänger, Häckselwagen, Überladewagen).
+- Problem behoben, bei dem geöffnete Courseplay-Menüs die Erkennung des Spielers verhinderten.
+- Verbesserte Multiplayer-Synchronisation für Tastaturkommandos.
 
 Wie der Abruf funktioniert:
-- Rohr ausfahren (Immer aktiv): Das Ausfahren des Abtankrohrs (bei Füllstand > 1%) ruft IMMER automatisch einen Abfahrer, unabhängig von allen Einstellungen! Das Einfahren des Rohrs beendet das Abtanken und schickt den Abfahrer weg (oder bricht die Anfahrt ab).
-- Rechte Umschalttaste + I (80% Tank-Auto-Ruf): Standardmäßig DEAKTIVIERT. Schaltet NUR den vorzeitigen automatischen Ruf ein/aus, wenn der Korntank mehr als 80% erreicht (noch vor dem Öffnen des Rohrs).
+- Rohr ausfahren (Immer aktiv): Das Ausfahren des Abtankrohrs/Auswurfbogens ruft IMMER automatisch einen Abfahrer, unabhängig von allen Einstellungen! Das Einfahren des Rohrs beendet das Abtanken und schickt den Abfahrer weg.
+- Rechte Umschalttaste + I (80% Tank-Auto-Ruf): Standardmäßig DEAKTIVIERT. Schaltet den vorzeitigen automatischen Ruf ein/aus, wenn der Korntank 80% erreicht.
 - Rechte Umschalttaste + U (Manueller Sofortabruf): Ruft jederzeit sofort den nächsten freien Abfahrer.
 
 Eigenschaften:
-- Nahtlose Anbindung von spielergesteuerten Mähdreschern an Courseplay-Abfahrer-Traktoren.
+- Nahtlose Anbindung von spielergesteuerten Mähdreschern und Feldhäckslern an Courseplay-Abfahrer-Traktoren.
 - Dynamische Vektorverfolgung hält den Traktor während der Ernte präzise unter dem Abtankrohr.
 - Kollisionsfreie Abfahrt nach Beendigung des Abtankvorgangs.
 
 Steuerung (Tastatur):
 - Rechte Umschalttaste + U: Freien Courseplay-Abfahrer sofort rufen.
-- Rechte Umschalttaste + I: Auto-Ruf bei 80% Füllung EIN / AUS schalten (standardmäßig AUS; das Ausfahren des Rohrs ruft den Abfahrer immer).
+- Rechte Umschalttaste + I: Auto-Ruf bei 80% Füllung EIN / AUS schalten.
 
 Anforderungen:
 - Erfordert installierten und aktiven Courseplay-Mod (FS25_Courseplay).
@@ -60,21 +72,27 @@ Credits:
 - Autor: exekx
 - Besonderer Dank an das Courseplay.devTeam für den großartigen Courseplay-Mod (https://github.com/Courseplay/Courseplay_FS25).]]></de>
 
-<fr><![CDATA[Une extension pour Courseplay qui permet aux tracteurs-bennes IA de Courseplay d'approcher, de suivre et de décharger automatiquement les moissonneuses-batteuses conduites par le joueur !
+<fr><![CDATA[Une extension pour Courseplay qui permet aux tracteurs-bennes IA de Courseplay d'approcher, de suivre et de décharger automatiquement les moissonneuses et ensileuses conduites par le joueur !
+
+Nouveautés v1.1.0.0 :
+- Support complet des ensileuses (machines sans trémie) : L'activation de la coupe ou le dépliage de la buse appelle automatiquement une benne qui reste à vos côtés pendant l'ensilage !
+- Alignement amélioré des bennes : Détection précise du point de déchargement pour toutes les remorques et transbordeurs.
+- Correction d'un problème où un menu Courseplay ouvert empêchait la détection du véhicule du joueur.
+- Synchronisation multijoueur améliorée pour les raccourcis clavier.
 
 Fonctionnement de l'appel :
-- Dépliage de la buse (Toujours actif) : Déplier votre buse de vidange (avec plus de 1% de grain) est un signal physique direct qui appelle TOUJOURS automatiquement une benne Courseplay ! Replier la buse indique à la benne de repartir (ou annule l'appel si elle est en route).
-- Maj droite + I (Appel auto à 80%) : Désactivé par défaut. Appuyer sur Maj droite + I active/désactive l'appel anticipé de la benne lorsque la trémie atteint 80% (avant même de déplier la buse).
+- Dépliage de la buse (Toujours actif) : Déplier votre buse de vidange appelle TOUJOURS automatiquement une benne Courseplay ! Replier la buse indique à la benne de repartir.
+- Maj droite + I (Appel auto à 80%) : Active/désactive l'appel anticipé de la benne lorsque la trémie atteint 80%.
 - Maj droite + U (Appel manuel immédiat) : Envoie immédiatement la benne disponible la plus proche à tout moment.
 
 Caractéristiques :
-- Connecte de manière fluide les moissonneuses conduites par le joueur avec les tracteurs de déchargement Courseplay.
+- Connecte de manière fluide les moissonneuses et ensileuses avec les tracteurs de déchargement Courseplay.
 - Suivi dynamique qui maintient le tracteur précisément sous la buse pendant la récolte.
 - Manœuvres de départ sécurisées sans collision une fois le déchargement terminé.
 
 Commandes (Clavier) :
 - Maj droite + U : Appeler immédiatement une benne Courseplay.
-- Maj droite + I : Activer/Désactiver l'appel automatique à 80% de trémie (désactivé par défaut ; ouvrir la buse appelle toujours une benne).
+- Maj droite + I : Activer/Désactiver l'appel automatique à 80% de trémie.
 
 Prérequis :
 - Nécessite le mod Courseplay (FS25_Courseplay) installé et activé dans la partie.

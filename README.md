@@ -1,41 +1,62 @@
-﻿# Courseplay: Unload Me (FS25_CourseplayPlayerUnload)
+# Courseplay: Unload Me (FS25_CourseplayPlayerUnload)
 
 [![Game](https://img.shields.io/badge/Game-Farming%20Simulator%2025-green.svg)](https://www.farming-simulator.com/)
 [![Courseplay Add-on](https://img.shields.io/badge/Add--on%20for-Courseplay-blue.svg)](https://github.com/Courseplay/Courseplay_FS25)
 [![GitHub Repository](https://img.shields.io/badge/GitHub-FS25__CourseplayPlayerUnload-181717?logo=github)](https://github.com/exekx/FS25_CourseplayPlayerUnload)
 [![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)](https://www.gnu.org/licenses/gpl-3.0)
-[![Version](https://img.shields.io/badge/Version-1.0.0.0-brightgreen.svg)](https://github.com/exekx/FS25_CourseplayPlayerUnload/releases)
-A standalone add-on mod for **Farming Simulator 25** and **Courseplay** that enables Courseplay AI unloader tractors to automatically approach, track, match speed, and unload combines driven by human players!
+[![Version](https://img.shields.io/badge/Version-1.1.1.0-brightgreen.svg)](https://github.com/exekx/FS25_CourseplayPlayerUnload/releases)
+
+A standalone add-on mod for **Farming Simulator 25** and **Courseplay** that enables Courseplay AI unloader tractors to automatically approach, track, match speed, and unload combines and forage harvesters (choppers) driven by human players!
 
 **Repository:** [https://github.com/exekx/FS25_CourseplayPlayerUnload](https://github.com/exekx/FS25_CourseplayPlayerUnload)
 
 ---
 
+## What's New in v1.1.0.0
+
+- 🌽 **Full Forage Harvester / Chopper Support:**
+  Forage harvesters without internal grain tanks/hoppers are now fully supported! When you unfold the discharge pipe/spout or turn on the cutter, the nearest Courseplay unloader is automatically called, pulls up alongside, and matches speed continuously as long as you harvest. The unloader will not leave or dismiss you due to 0% fill level.
+- 🚜 **Enhanced Trailer Alignment & Auto-Aiming:**
+  Physical discharge spout nodes are dynamically measured and synchronized with Courseplay's fruit detection. Works seamlessly with standard tipping trailers, silage trailers, and auger wagons (перевантажувачі).
+- 🛠️ **False AI Worker Fix:**
+  Fixed an issue where opening the Courseplay HUD or selecting a field/course in your combine falsely classified you as an AI worker and prevented Courseplay unloaders from detecting your combine.
+- 🌐 **Multiplayer Event Synchronization:**
+  Keyboard hotkeys (<kbd>Right Shift</kbd> + <kbd>U</kbd> / <kbd>I</kbd>) are now synchronized via network events from client to server in multiplayer sessions.
+
+---
+
 ## Overview
 
-In standard Courseplay, combine unloader drivers only service combines that are operated by Courseplay fieldwork AI workers. When you choose to drive the combine yourself, Courseplay unloaders remain idle at their wait points.
+In standard Courseplay, combine unloader drivers only service combines that are operated by Courseplay fieldwork AI workers. When you choose to drive the combine or forage harvester yourself, Courseplay unloaders remain idle at their wait points.
 
-**Courseplay: Unload Me** creates a bridge between your player-driven combine and Courseplay's unloading subsystem. Without changing how you drive or harvest, idle Courseplay tractors will automatically respond to your physical actions or key presses, pull up alongside your combine under the pipe on the fly, match your speed while you continue cutting, and depart smoothly once full or when unloading is done.
+**Courseplay: Unload Me** creates a bridge between your player-driven machine and Courseplay's unloading subsystem. Without changing how you drive or harvest, idle Courseplay tractors will automatically respond to your physical actions or key presses, pull up alongside under the pipe/spout on the fly, match your speed while you continue cutting, and depart smoothly once full or when unloading is done.
 
 ---
 
 ## How Unloader Calling Works
 
-### 1. Opening the Pipe — Always Active (Physical Command)
-You don't need to press any hotkeys to get unloaded! Extending your discharge pipe serves as an intuitive physical command:
-- **Unfold / Open the Pipe:** As long as your combine's grain tank contains crops (> 1%), extending your discharge pipe **ALWAYS automatically calls the nearest idle Courseplay unloader**, regardless of your Auto-Call toggle setting.
+### 1. Opening the Pipe / Turning On Cutter — Always Active (Physical Command)
+You don't need to press any hotkeys to get unloaded! Extending your discharge pipe or operating your machine serves as an intuitive physical command:
+- **Combines with Grain Tank:** As long as your tank contains crops (> 1%), extending your discharge pipe **ALWAYS automatically calls the nearest idle Courseplay unloader**, regardless of your Auto-Call toggle setting.
+- **Forage Harvesters / Choppers (No Tank):** Unfolding the pipe/spout and turning on the cutter or driving forward **ALWAYS automatically calls an unloader**. The unloader remains by your side continuously until its trailer is filled or you fold the pipe / turn off the machine.
 - **Fold / Close the Pipe:** 
   - If the unloader is currently alongside you unloading, closing the pipe signals that you are done. The unloader immediately finishes, steers away, and departs.
   - If the unloader is still on its way across the field and you fold the pipe, the call is cancelled and the tractor safely returns to its waiting position.
 
-### 2. <kbd>Right Shift</kbd> + <kbd>I</kbd> — 80% Tank Auto-Call (Optional Advance Summon)
+### 2. <kbd>Right Shift</kbd> + <kbd>I</kbd> — 80% Tank Auto-Call (Combines with Tanks)
 - **What this toggle actually does:** <kbd>Right Shift</kbd> + <kbd>I</kbd> **ONLY** controls whether an unloader is called automatically in advance when your grain tank reaches **80% capacity** (before you have even opened the pipe).
 - **Disabled by default:** This is turned **OFF** by default so you don't have tractors driving over until you are ready.
 - **Enabled:** If turned ON, an unloader will set off towards you as soon as your tank reaches 80% fill, so it is already waiting alongside when you unfold the pipe.
-- *(Note: Even when this 80% auto-call is turned OFF, opening the pipe will still always call an unloader!)*
+- *(Note: For forage harvesters without grain tanks, opening the pipe or activating the cutter calls the unloader directly).*
 
 ### 3. <kbd>Right Shift</kbd> + <kbd>U</kbd> — Instant Manual Call
 - Press <kbd>Right Shift</kbd> + <kbd>U</kbd> at any moment to immediately summon the nearest available Courseplay unloader on demand, regardless of pipe position or fill level.
+
+---
+
+## Trailer Compatibility Note
+- **Supported Trailers:** Standard tipping trailers, dump trailers, silage trailers, and auger wagons with single axle, tandem, or tridem configurations.
+- **Turntable / Dolly Drawbar Trailers:** Courseplay's internal AI unloader driver restricts turntable drawbar trailers (trailers with a steerable front axle/dolly) when backing up or maneuvering. For best results with Courseplay unloaders, use rigid/tandem trailers or auger wagons.
 
 ---
 

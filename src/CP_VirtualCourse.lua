@@ -7,9 +7,10 @@
 CP_VirtualCourse = {}
 CP_VirtualCourse_mt = { __index = CP_VirtualCourse }
 
-function CP_VirtualCourse.new(combine)
+function CP_VirtualCourse.new(combine, primeMover)
     local self = setmetatable({}, CP_VirtualCourse_mt)
     self.combine = combine
+    self.vehicle = primeMover or combine
     self.course = nil
     self.lastUpdateTime = 0
     self.updateIntervalMs = 500 -- Advance virtual course twice a second
@@ -28,15 +29,27 @@ function CP_VirtualCourse:update()
     end
     self.lastUpdateTime = currentTime
 
-    local dirNode = self.combine:getAIDirectionNode() or self.combine.rootNode
+    local dirNode = CP_PlayerAdapter.getWorkingDirectionNode(self.combine, self.vehicle)
+    if dirNode == nil then
+        return nil
+    end
     local _, yRot, _ = getWorldRotation(dirNode)
     local angleDeg = math.deg(yRot)
     local dx, dz = -math.sin(yRot), -math.cos(yRot)
     local Course = CP_GetCpClass("Course")
 
-    -- Generate 50 points (100 meters) straight ahead in combine coordinate frame
+    -- Prefer official Courseplay method if available
+    if Course ~= nil and Course.createStraightForwardCourse then
+        local success, c = pcall(Course.createStraightForwardCourse, self.combine, 350, 0)
+        if success and c ~= nil and type(c.copy) == "function" then
+            self.course = c
+            return self.course
+        end
+    end
+
+    -- Generate waypoints from -20m (behind combine) to +280m (ahead)
     local rawWaypoints = {}
-    for i = 0, 50 do
+    for i = -10, 140 do
         local dist = i * 2.0
         local wx, wy, wz = localToWorld(dirNode, 0, 0, dist)
         table.insert(rawWaypoints, {
@@ -52,7 +65,6 @@ function CP_VirtualCourse:update()
         })
     end
 
-    -- Attempt to instantiate official Courseplay Course object
     if Course ~= nil and type(Course) == "table" then
         local success, c = pcall(Course, self.combine, rawWaypoints, true)
         if success and c ~= nil and type(c.copy) == "function" then
