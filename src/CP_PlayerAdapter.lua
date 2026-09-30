@@ -438,25 +438,20 @@ function CP_PlayerAdapter:getFillType()
 end
 
 function CP_PlayerAdapter:getChassisWidth()
-    local w = 3.5
-    if self.vehicle and self.vehicle.size then
-        w = math.max(w, self.vehicle.size.width or 0, self.vehicle.size.length or 0)
+    local w = 3.8
+    if self.vehicle and self.vehicle.size and self.vehicle.size.width then
+        w = math.max(w, self.vehicle.size.width)
     end
-    if self.combine and self.combine.size then
-        w = math.max(w, self.combine.size.width or 0, self.combine.size.length or 0)
+    if self.combine and self.combine.size and self.combine.size.width then
+        w = math.max(w, self.combine.size.width)
     end
-    local ww = self:getWorkWidth()
-    if ww and ww >= 12.0 then
-        w = math.max(w, 14.0)
-    end
-    return w
+    -- Clamp chassis width to realistic combine body bounds (max 4.5m) so cutter width never blows up pipe offset!
+    return math.min(w, 4.5)
 end
 
 function CP_PlayerAdapter:getPipeOffset(additionalOffsetX, additionalOffsetZ)
     local pipeOffsetX = nil
     local pipeOffsetZ = 0.0
-    local chassisWidth = self:getChassisWidth()
-    local minPipeOffset = (chassisWidth / 2) + 1.8
 
     -- For choppers (forage harvesters), dynamically check fruit to pick the side without crops
     if self:isChopper() then
@@ -465,49 +460,79 @@ function CP_PlayerAdapter:getPipeOffset(additionalOffsetX, additionalOffsetZ)
         if (self.fruitLeft or 0) > (self.fruitRight or 0) then
             side = -1.0 -- Fruit on left -> drive on right (-X in Giants coordinate system)
         end
-        local defaultWidth = math.max(((self:getWorkWidth() or 6.0) / 2) + 2.5, minPipeOffset)
+        local defaultWidth = math.max(((self:getWorkWidth() or 6.0) / 2) + 2.5, 4.5)
         pipeOffsetX = side * defaultWidth
         return pipeOffsetX + (additionalOffsetX or 0), pipeOffsetZ + (additionalOffsetZ or 0), self:hasAutoAimPipe()
     end
 
-    -- 1. Physical pipe discharge node measurement in combine reference frame (PRIORITY #1!)
-    if self.combine and self.combine.getCurrentDischargeNode then
-        local dischargeNode = self.combine:getCurrentDischargeNode()
+    -- 1. Physical pipe discharge node measurement from pipe specification
+    if self.combine then
+        local dischargeNode = nil
+        if self.combine.getPipeDischargeNodeIndex and self.combine.getDischargeNodeByIndex then
+            local ix = self.combine:getPipeDischargeNodeIndex()
+            if ix then
+                dischargeNode = self.combine:getDischargeNodeByIndex(ix)
+            end
+        end
+        if not dischargeNode and self.combine.getCurrentDischargeNode then
+            dischargeNode = self.combine:getCurrentDischargeNode()
+        end
+
         if dischargeNode and dischargeNode.node then
             local refNode = self:getPipeOffsetReferenceNode()
             local dx, _, dz = localToLocal(dischargeNode.node, refNode, 0, 0, 0)
-            if math.abs(dx) > 1.5 then
-                local side = dx >= 0 and 1 or -1
-                pipeOffsetX = side * math.max(math.abs(dx), minPipeOffset)
-                pipeOffsetZ = dz
+            -- Only accept physical measurement if pipe is actually unfolded (dx > 3.0m)
+            if math.abs(dx) > 3.0 then
+                -- Track the maximum unfolded position to avoid using a half-unfolded state
+                if self.maxMeasuredPipeOffsetX == nil or math.abs(dx) > math.abs(self.maxMeasuredPipeOffsetX) then
+                    self.maxMeasuredPipeOffsetX = dx
+                    self.maxMeasuredPipeOffsetZ = dz
+                end
+                pipeOffsetX = self.maxMeasuredPipeOffsetX
+                pipeOffsetZ = self.maxMeasuredPipeOffsetZ or dz
             end
         end
     end
 
-    -- 2. Check Courseplay vehicle settings if physical measurement was not available
-    if pipeOffsetX == nil and self.combine.getCpSettings then
+    -- 2. Check Courseplay vehicle settings if pre-calibrated by Courseplay
+    if pipeOffsetX == nil and self.combine and self.combine.getCpSettings then
         local cpSettings = self.combine:getCpSettings()
         if cpSettings and cpSettings.pipeOffsetX and cpSettings.pipeOffsetZ then
             local valX = cpSettings.pipeOffsetX:getValue()
             local valZ = cpSettings.pipeOffsetZ:getValue()
-            if valX and math.abs(valX) > 0.5 then
-                local side = valX >= 0 and 1 or -1
-                pipeOffsetX = side * math.max(math.abs(valX), minPipeOffset)
+            if valX and math.abs(valX) > 2.0 then
+                pipeOffsetX = valX
                 pipeOffsetZ = valZ or 0.0
             end
         end
     end
 
-    -- 3. Fallback default if not detected:
+    -- 3. Calculate safe lateral clearance based on attached cutter / header width:
+    local workWidth = self:getWorkWidth()
+    local minSafeFromHeader = 7.5
+    if workWidth and workWidth > 0 and not self:isAttachedHarvester() then
+        -- Cutter extends (workWidth / 2) to each side.
+        -- Standard unloader trailer/tractor width is ~3.0m - 3.4m (half-width ~1.6m).
+        -- To give comfortable, safe clearance of ~0.5m - 0.8m between the cutter edge and unloader track:
+        -- The unloader center line must be at least (workWidth / 2) + 2.1m!
+        minSafeFromHeader = math.max(4.5, (workWidth / 2) + 2.1)
+    end
+
+    -- 4. Fallback defaults and comfortable clearance bounds:
     if pipeOffsetX == nil then
         if self:isAttachedHarvester() then
-            -- Modular carrier / attached harvester (NEXAT NexCo): pipe is on the right (-X in Giants coordinate system)
-            pipeOffsetX = -math.max(5.5, minPipeOffset)
+            pipeOffsetX = -6.8
         else
-            -- Standard self-propelled grain combine: pipe is on the left (+X in Giants coordinate system)
-            pipeOffsetX = math.max(5.5, minPipeOffset)
+            pipeOffsetX = minSafeFromHeader
         end
         pipeOffsetZ = 0.0
+    else
+        -- Ensure comfortable clearance: unloader must NEVER drive dangerously close to the cutter or combine body!
+        if pipeOffsetX > 0 then
+            pipeOffsetX = math.max(pipeOffsetX, minSafeFromHeader)
+        elseif pipeOffsetX < 0 then
+            pipeOffsetX = math.min(pipeOffsetX, -minSafeFromHeader)
+        end
     end
 
     return pipeOffsetX + (additionalOffsetX or 0), pipeOffsetZ + (additionalOffsetZ or 0), self:hasAutoAimPipe()
@@ -536,6 +561,10 @@ end
 
 function CP_PlayerAdapter.checkIsChopper(combine)
     if not combine then return false end
+    local ImplementUtil = CP_GetCpClass("ImplementUtil") or _G.ImplementUtil
+    if ImplementUtil and ImplementUtil.isChopper then
+        return ImplementUtil.isChopper(combine) == true
+    end
     local spec = combine.spec_combine
     if spec and spec.isForageHarvester then
         return true
@@ -548,13 +577,7 @@ function CP_PlayerAdapter.checkIsChopper(combine)
     end
     if combine.getFillUnitCapacity and spec and spec.fillUnitIndex then
         local cap = combine:getFillUnitCapacity(spec.fillUnitIndex)
-        if cap == nil or cap == 0 or cap > 10000000 or cap == math.huge then
-            return true
-        end
-    end
-    local pipeSpec = combine.spec_pipe
-    if pipeSpec and pipeSpec.numAutoAimingStates and pipeSpec.numAutoAimingStates > 0 then
-        if combine.getFillUnitCapacity and spec and spec.fillUnitIndex and combine:getFillUnitCapacity(spec.fillUnitIndex) <= 0 then
+        if cap and (cap > 10000000 or cap == math.huge) then
             return true
         end
     end
@@ -806,10 +829,19 @@ function CP_PlayerAdapter:getPipeOffsetReferenceNode()
 end
 
 function CP_PlayerAdapter:getMeasuredBackDistance()
-    if self.combine.size and self.combine.size.length then
-        return self.combine.size.length / 2
+    local backDist = 8.0
+    local c = self.combine or self.vehicle
+    if c and c.size and c.size.length then
+        local len = c.size.length
+        local offset = (c.size.lengthOffset or 0)
+        local dirOffset = 0
+        local AIUtil = CP_GetCpClass("AIUtil") or _G.AIUtil
+        if AIUtil and AIUtil.getDirectionNodeToRootNodeOffset then
+            dirOffset = AIUtil.getDirectionNodeToRootNodeOffset(c) or 0
+        end
+        backDist = math.max(backDist, (len / 2) - offset + dirOffset)
     end
-    return 4.0
+    return backDist
 end
 
 function CP_PlayerAdapter:getAreaToAvoid()

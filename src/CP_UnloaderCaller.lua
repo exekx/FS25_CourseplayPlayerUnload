@@ -356,18 +356,47 @@ function CP_UnloaderCaller.callBestUnloader(vehicle, isManual)
     local targetVehicle = adapter.vehicle or vehicle
 
     if adapter.assignedUnloader and type(adapter.assignedUnloader) == "table" then
-        if isManual then
-            local name = (adapter.assignedUnloader.getName and adapter.assignedUnloader:getName()) or "Tractor"
-            local text = string.format(g_i18n:getText("cp_player_unload_called") or "Unloader '%s' is already assigned.", name)
-            showNotification(text)
+        local currentUnloader = adapter.assignedUnloader
+        local currentStrategy = (type(currentUnloader.getCpDriveStrategy) == "function") and currentUnloader:getCpDriveStrategy()
+        local isFull = (currentStrategy and currentStrategy.getFillLevelPercentage and currentStrategy:getFillLevelPercentage() >= 98)
+
+        if isFull then
+            -- Assigned unloader is full; clear and find a fresh unloader
+            adapter.assignedUnloader = nil
+        elseif isManual then
+            -- Player manually pressed call button: re-dispatch assigned unloader to current combine position!
+            print(string.format("CP_PlayerUnload: Manual re-call for assigned unloader '%s'", tostring(currentUnloader:getName())))
+            if currentStrategy and currentStrategy.call then
+                local success = currentStrategy:call(targetVehicle, nil)
+                if success then
+                    adapter.pipeCallEligible = false
+                    local name = (currentUnloader.getName and currentUnloader:getName()) or "Tractor"
+                    local template = (g_i18n and g_i18n:hasText("cp_player_unload_called") and g_i18n:getText("cp_player_unload_called")) or "Courseplay unloader '%s' has been called."
+                    showNotification(string.format(template, name))
+                    return true
+                end
+            end
+            -- Call failed (e.g. unloader canceled job), clear and search again
+            adapter.assignedUnloader = nil
+        else
+            -- Automatic check: verify unloader is still actively following/approaching
+            if currentStrategy then
+                local s = currentStrategy.state
+                local states = currentStrategy.states
+                if s == states.IDLE or s == states.WAITING_FOR_SOMETHING_TO_DO or currentStrategy.combineToUnload ~= targetVehicle then
+                    -- Unloader lost the combine or went idle; re-target it to the combine!
+                    currentStrategy:call(targetVehicle, nil)
+                    return true
+                end
+            end
+            return true
         end
-        return true
     end
 
     local unloader = CP_UnloaderCaller.findBestUnloader(targetVehicle)
     if unloader == nil then
         if isManual then
-            local text = g_i18n:getText("cp_player_unload_no_unloader") or "No idle Courseplay unloader found in range."
+            local text = (g_i18n and g_i18n:hasText("cp_player_unload_no_unloader") and g_i18n:getText("cp_player_unload_no_unloader")) or "No idle Courseplay unloader found in range."
             showNotification(text)
         end
         return false
@@ -380,22 +409,18 @@ function CP_UnloaderCaller.callBestUnloader(vehicle, isManual)
     print(string.format("CP_PlayerUnload: Calling unloader '%s' for combine '%s' (carrier: '%s', speed: %.1f km/h, chopper: %s)",
         tostring(unloader:getName()), tostring(combineName), tostring(targetVehicle:getName()), targetVehicle:getLastSpeed(), tostring(adapter:isChopper())))
 
-    local isMoving = (targetVehicle.getLastSpeed and targetVehicle:getLastSpeed() > 0.5)
-    local rendezvousWp = (isMoving and adapter.getRendezvousWaypoint and adapter:getRendezvousWaypoint(35)) or nil
-    local success = false
-    if rendezvousWp ~= nil then
-        success = strategy:call(targetVehicle, rendezvousWp)
-    end
-    if not success then
-        success = strategy:call(targetVehicle, nil)
-    end
-    print(string.format("CP_PlayerUnload: strategy:call returned: %s (moving: %s)", tostring(success), tostring(isMoving)))
+    -- ALWAYS call with nil as waypoint for player combines!
+    -- This ensures Courseplay's pathfinder routes directly behind the combine (xOffset = pipeOffset, zOffset = -backDistance - 5)
+    -- and NEVER drives in front of the combine header!
+    local success = strategy:call(targetVehicle, nil)
+    print(string.format("CP_PlayerUnload: strategy:call returned: %s", tostring(success)))
 
     if success then
         adapter.assignedUnloader = unloader
         adapter.pipeCallEligible = false
         local name = (unloader.getName and unloader:getName()) or "Tractor"
-        local text = string.format(g_i18n:getText("cp_player_unload_called") or "Courseplay unloader '%s' has been called.", name)
+        local template = (g_i18n and g_i18n:hasText("cp_player_unload_called") and g_i18n:getText("cp_player_unload_called")) or "Courseplay unloader '%s' has been called."
+        local text = string.format(template, name)
         showNotification(text)
         return true
     end
