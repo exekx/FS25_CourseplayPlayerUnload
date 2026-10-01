@@ -766,10 +766,8 @@ function CP_UnloaderHooks.init()
     end
 
     -- 3g. Hook AIDriveStrategyUnloadCombine:followChopper
-    -- Shifts the unloader 5 meters further back alongside forage harvesters,
-    -- 3. Hook AIDriveStrategyUnloadCombine.followChopper & chopper turn handling
-    -- Ensures the unloader stays ~5m behind chopper discharge point
-    -- and intelligently stops during player combine turns, then actively loops around to meet it on the new swath!
+    -- Ensures the unloader stays ~5m behind chopper discharge point under the spout,
+    -- stops cleanly during player combine turns, and smoothly follows the combine on swaths.
     if AIDriveStrategyUnloadCombine then
         if AIDriveStrategyUnloadCombine.followChopper then
             AIDriveStrategyUnloadCombine.followChopper = Utils.overwrittenFunction(
@@ -798,77 +796,42 @@ function CP_UnloaderHooks.init()
 
                         if isTurning then
                             -- =========================================================================
-                            -- COMBINE IS TURNING: GIVE TIME AND SPACE TO COMPLETE THE TURN!
+                            -- COMBINE IS TURNING: GIVE FULL SPACE TO COMPLETE THE TURN!
+                            -- The unloader STOPS in place at the end of the previous swath.
+                            -- Wheels stay straight, zero collision risk, zero interference.
                             -- =========================================================================
-                            local combineReversing = (combineStrategy and combineStrategy.isReversing and combineStrategy:isReversing())
-                            local turnDir = (combineStrategy and combineStrategy.getTurnDirection and combineStrategy:getTurnDirection()) or 0
-
-                            -- If combine is steering towards unloader side:
-                            -- dx < 0 is right side, dx > 0 is left side.
-                            -- turnDir == -1 is right turn, turnDir == 1 is left turn.
-                            local turningTowardsUnloader = (dx < 0 and turnDir == -1) or (dx > 0 and turnDir == 1)
-
-                            if combineReversing or (turningTowardsUnloader and dz > -8.0) or (dz > -4.5) then
-                                -- Combine is turning into us, too close, or reversing: back up straight to clear swing area!
-                                local reverseSpeed = (self.settings and self.settings.reverseSpeed and self.settings.reverseSpeed:getValue()) or 6
-                                self:setMaxSpeed(math.min(6, reverseSpeed))
-                                local gx, gy, gz = localToWorld(tractorDirNode, 0, 0, -10)
-                                return gx, gz
-                            else
-                                -- Safely behind combine swing zone: STOP and hold position until turn finishes!
-                                self:setMaxSpeed(0)
-                                local gx, gy, gz = localToWorld(tractorDirNode, 0, 0, 5)
-                                return gx, gz
-                            end
-                        end
-
-                        local sameDirection = (CpMathUtil and CpMathUtil.isSameDirection(tractorDirNode, combineDirNode, 40)) or false
-
-                        local manualOffsetZ = (self.settings and self.settings.combineOffsetZ and self.settings.combineOffsetZ:getValue()) or 0
-                        local targetZ = -5.0 + manualOffsetZ
-                        local targetX = self:getAutoAimPipeOffsetX()
-
-                        if not sameDirection then
-                            -- =========================================================================
-                            -- COMBINE FINISHED TURN: UNLOADER TURNS AROUND TO MEET IT ON NEW ROW!
-                            -- =========================================================================
-                            local targetWorldX, targetWorldY, targetWorldZ = localToWorld(combineDirNode, targetX, 0, targetZ - 2.0)
-                            local lx, _, lz = worldToLocal(tractorDirNode, targetWorldX, targetWorldY, targetWorldZ)
-
-                            local gx, gz
-                            local turnSpeed = (self.settings and self.settings.turnSpeed and self.settings.turnSpeed:getValue()) or 12
-                            local fieldSpeed = (self.getFieldSpeed and self:getFieldSpeed()) or 25
-
-                            if lz > 6.0 and math.abs(lx) < 8.0 then
-                                -- Already pointing mostly towards target: drive directly to rendezvous point
-                                gx, gz = targetWorldX, targetWorldZ
-                                local dist = MathUtil.vector2Length(lx, lz)
-                                local speed = (dist > 18.0) and fieldSpeed or turnSpeed
-                                self:setMaxSpeed(speed)
-                            else
-                                -- Still angled or facing opposite: steer forward into turnaround loop towards target side
-                                local steerSideX = (lx < 0) and -14.0 or 14.0
-                                local tx, ty, tz = localToWorld(tractorDirNode, steerSideX, 0, 16.0)
-                                gx, gz = tx, tz
-                                self:setMaxSpeed(turnSpeed)
-                            end
-
+                            self:setMaxSpeed(0)
+                            local gx, gy, gz = localToWorld(tractorDirNode, 0, 0, 5)
                             return gx, gz
                         end
 
                         -- =========================================================================
-                        -- NORMAL FOLLOWING (Aligned & Harvesting Straight)
+                        -- NORMAL FOLLOWING & SWATH TRACKING (v1.1.3.0 Proven Dynamic Follow)
                         -- =========================================================================
+                        local manualOffsetZ = (self.settings and self.settings.combineOffsetZ and self.settings.combineOffsetZ:getValue()) or 0
+                        local targetZ = -5.0 + manualOffsetZ
+                        local targetX = self:getAutoAimPipeOffsetX()
+
+                        local sameDirection = (CpMathUtil and CpMathUtil.isSameDirection(tractorDirNode, combineDirNode, 45)) or false
                         local combineSpeed = (self.combineToUnload.getLastSpeed and self.combineToUnload:getLastSpeed()) or (self.combineToUnload.lastSpeedReal * 3600)
-                        local dzError = -(dz - targetZ)
-                        if math.abs(dx - targetX) > 1.5 then
-                            -- Offset error is large, pull slightly back to clear the rear
-                            dzError = dzError - 3.0
+
+                        local speed
+                        if sameDirection then
+                            local dzError = -(dz - targetZ)
+                            if math.abs(dx - targetX) > 1.5 then
+                                -- Offset error is large, pull slightly back to clear the rear
+                                dzError = dzError - 3.0
+                            end
+                            local targetDistBehind = self.targetDistanceBehindChopper or 10
+                            local speedDelta = math.min(dzError, dFollowProxy - targetDistBehind, dProxy - targetDistBehind) * 2
+                            speedDelta = (CpMathUtil and CpMathUtil.clamp(speedDelta, -10, 15)) or math.max(-10, math.min(15, speedDelta))
+                            speed = combineSpeed + speedDelta
+                        else
+                            local targetDistBehind = self.targetDistanceBehindChopper or 10
+                            local turnSpeed = (self.settings and self.settings.turnSpeed and self.settings.turnSpeed:getValue()) or 12
+                            local speedDelta = math.min(dFollowProxy - targetDistBehind, dProxy - targetDistBehind) * 2
+                            speed = (CpMathUtil and CpMathUtil.clamp(speedDelta, 0, turnSpeed)) or math.max(0, math.min(turnSpeed, speedDelta))
                         end
-                        local targetDistBehind = self.targetDistanceBehindChopper or 10
-                        local speedDelta = math.min(dzError, dFollowProxy - targetDistBehind, dProxy - targetDistBehind) * 2
-                        speedDelta = (CpMathUtil and CpMathUtil.clamp(speedDelta, -10, 15)) or math.max(-10, math.min(15, speedDelta))
-                        local speed = combineSpeed + speedDelta
 
                         self:setMaxSpeed(math.max(0, speed))
 
@@ -881,7 +844,7 @@ function CP_UnloaderHooks.init()
                     return superFunc(self)
                 end
             )
-            print("CP_PlayerUnload: Hooked AIDriveStrategyUnloadCombine.followChopper for 5m rearward positioning & turn turnaround")
+            print("CP_PlayerUnload: Hooked AIDriveStrategyUnloadCombine.followChopper for 5m rearward positioning & turn waiting")
         end
 
         -- Intercept startChopperTurn, handleChopper180Turn and handleChopperHeadlandTurn for player combines:
