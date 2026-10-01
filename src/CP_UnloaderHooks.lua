@@ -699,14 +699,21 @@ function CP_UnloaderHooks.init()
                             -- Significantly more fruit on right -> drive on clean left side (+X)
                             targetOffsetX = distanceBetweenVehicles
                         else
-                            -- No significant difference in standing crops (e.g. grass windrows / swaths, mown fields):
-                            -- Stay on whichever side the unloader is currently located relative to the harvester!
-                            local hNode = CP_PlayerAdapter.getDirectionNode(harvester)
-                            local dx, _, _ = localToLocal(self.vehicle.rootNode, hNode, 0, 0, 0)
-                            if dx < 0 then
-                                targetOffsetX = -distanceBetweenVehicles
+                            local manualX = (self.settings and self.settings.combineOffsetX and self.settings.combineOffsetX:getValue()) or 0
+                            if math.abs(manualX) > 0.5 then
+                                -- User explicitly configured combineOffsetX with a sign in Courseplay settings!
+                                -- Positive manualX -> Left side (+X)
+                                -- Negative manualX -> Right side (-X)
+                                targetOffsetX = (manualX > 0) and distanceBetweenVehicles or -distanceBetweenVehicles
                             else
-                                targetOffsetX = distanceBetweenVehicles
+                                -- Default for windrows/swaths: Stay on whichever side the unloader is currently located relative to the harvester!
+                                local hNode = CP_PlayerAdapter.getDirectionNode(harvester)
+                                local dx, _, _ = localToLocal(self.vehicle.rootNode, hNode, 0, 0, 0)
+                                if dx < 0 then
+                                    targetOffsetX = -distanceBetweenVehicles
+                                else
+                                    targetOffsetX = distanceBetweenVehicles
+                                end
                             end
                         end
 
@@ -734,9 +741,33 @@ function CP_UnloaderHooks.init()
         print("CP_PlayerUnload: Hooked AIDriveStrategyUnloadCombine.calculateAutoAimPipeOffsetX for header clearance")
     end
 
+    -- 3f_2. Hook AIDriveStrategyUnloadCombine:unloadMovingChopper
+    -- Directs moving chopper unloading directly to our enhanced followChopper,
+    -- preventing Courseplay from attempting AI waypoint turnaround courses for player combines.
+    if AIDriveStrategyUnloadCombine and AIDriveStrategyUnloadCombine.unloadMovingChopper then
+        AIDriveStrategyUnloadCombine.unloadMovingChopper = Utils.overwrittenFunction(
+            AIDriveStrategyUnloadCombine.unloadMovingChopper,
+            function(self, superFunc)
+                if self.combineToUnload and CP_UnloaderCaller and CP_UnloaderCaller.activeCombines and CP_UnloaderCaller.activeCombines[self.combineToUnload] ~= nil then
+                    if self:changeToUnloadWhenTrailerFull() then
+                        return
+                    end
+                    if self:isInDeadlock() then
+                        self:startMovingBackFromCombine(self.states.MOVING_BACK, self.combineToUnload)
+                        return
+                    end
+                    return self:followChopper()
+                else
+                    return superFunc(self)
+                end
+            end
+        )
+        print("CP_PlayerUnload: Hooked AIDriveStrategyUnloadCombine.unloadMovingChopper")
+    end
+
     -- 3g. Hook AIDriveStrategyUnloadCombine:followChopper
     -- Shifts the unloader 5 meters further back alongside forage harvesters,
-    -- positioning the trailer directly under the spout and safely away from the header.
+    -- and intelligently stops / backs up during player combine turns to give full room to turn!
     if AIDriveStrategyUnloadCombine and AIDriveStrategyUnloadCombine.followChopper then
         AIDriveStrategyUnloadCombine.followChopper = Utils.overwrittenFunction(
             AIDriveStrategyUnloadCombine.followChopper,
@@ -756,30 +787,60 @@ function CP_UnloaderHooks.init()
                     local dFollowProxy = (self.followModeProximitySensor and self.followModeProximitySensor.getClosestObjectDistanceAndRootVehicle and self.followModeProximitySensor:getClosestObjectDistanceAndRootVehicle()) or 100
                     local dProxy = (self.proximityController and self.proximityController.checkBlockingVehicleFront and self.proximityController:checkBlockingVehicleFront()) or 100
 
+                    local combineStrategy = self.combineToUnload:getCpDriveStrategy()
+                    local isTurning = false
+                    if combineStrategy and combineStrategy.isTurning then
+                        isTurning = combineStrategy:isTurning()
+                    end
+
+                    -- Check directional alignment (within 35 degrees)
+                    local sameDirection = (CpMathUtil and CpMathUtil.isSameDirection(tractorDirNode, combineDirNode, 35)) or false
+
+                    -- Is the combine currently in a turn / headland maneuver?
+                    local isTurnManeuver = isTurning or (not sameDirection)
+
+                    if isTurnManeuver then
+                        -- =========================================================================
+                        -- COMBINE IS TURNING: GIVE TIME AND SPACE TO COMPLETE THE TURN!
+                        -- =========================================================================
+                        local combineReversing = (combineStrategy and combineStrategy.isReversing and combineStrategy:isReversing())
+                        local turnDir = (combineStrategy and combineStrategy.getTurnDirection and combineStrategy:getTurnDirection()) or 0
+
+                        -- If combine is steering towards unloader side:
+                        -- dx < 0 is right side, dx > 0 is left side.
+                        -- turnDir == -1 is right turn, turnDir == 1 is left turn.
+                        local turningTowardsUnloader = (dx < 0 and turnDir == -1) or (dx > 0 and turnDir == 1)
+
+                        if combineReversing or (turningTowardsUnloader and dz > -8.0) or (dz > -4.5) then
+                            -- Combine is turning into us, too close, or reversing: back up straight to clear swing area!
+                            local reverseSpeed = (self.settings and self.settings.reverseSpeed and self.settings.reverseSpeed:getValue()) or 6
+                            self:setMaxSpeed(math.min(6, reverseSpeed))
+                            local gx, gy, gz = localToWorld(tractorDirNode, 0, 0, -10)
+                            return gx, gz
+                        else
+                            -- Safely behind combine swing zone: STOP and hold position until turn finishes!
+                            self:setMaxSpeed(0)
+                            local gx, gy, gz = localToWorld(tractorDirNode, 0, 0, 5)
+                            return gx, gz
+                        end
+                    end
+
+                    -- =========================================================================
+                    -- NORMAL FOLLOWING (Aligned & Harvesting Straight)
+                    -- =========================================================================
                     local manualOffsetZ = (self.settings and self.settings.combineOffsetZ and self.settings.combineOffsetZ:getValue()) or 0
-                    -- Shift 5 meters rearward relative to combine cab, plus user-configurable offsetZ
                     local targetZ = -5.0 + manualOffsetZ
 
-                    local speed
-                    local sameDirection = (CpMathUtil and CpMathUtil.isSameDirection(tractorDirNode, combineDirNode, 45)) or true
                     local combineSpeed = (self.combineToUnload.getLastSpeed and self.combineToUnload:getLastSpeed()) or (self.combineToUnload.lastSpeedReal * 3600)
-
-                    if sameDirection then
-                        local dzError = -(dz - targetZ)
-                        if math.abs(dx - self:getAutoAimPipeOffsetX()) > 1.5 then
-                            -- Offset error is large, pull slightly back to clear the rear
-                            dzError = dzError - 3.0
-                        end
-                        local targetDistBehind = self.targetDistanceBehindChopper or 10
-                        local speedDelta = math.min(dzError, dFollowProxy - targetDistBehind, dProxy - targetDistBehind) * 2
-                        speedDelta = (CpMathUtil and CpMathUtil.clamp(speedDelta, -10, 15)) or math.max(-10, math.min(15, speedDelta))
-                        speed = combineSpeed + speedDelta
-                    else
-                        local targetDistBehind = self.targetDistanceBehindChopper or 10
-                        local turnSpeed = (self.settings and self.settings.turnSpeed and self.settings.turnSpeed:getValue()) or 15
-                        local speedDelta = math.min(dFollowProxy - targetDistBehind, dProxy - targetDistBehind) * 2
-                        speed = (CpMathUtil and CpMathUtil.clamp(speedDelta, 0, turnSpeed)) or math.max(0, math.min(turnSpeed, speedDelta))
+                    local dzError = -(dz - targetZ)
+                    if math.abs(dx - self:getAutoAimPipeOffsetX()) > 1.5 then
+                        -- Offset error is large, pull slightly back to clear the rear
+                        dzError = dzError - 3.0
                     end
+                    local targetDistBehind = self.targetDistanceBehindChopper or 10
+                    local speedDelta = math.min(dzError, dFollowProxy - targetDistBehind, dProxy - targetDistBehind) * 2
+                    speedDelta = (CpMathUtil and CpMathUtil.clamp(speedDelta, -10, 15)) or math.max(-10, math.min(15, speedDelta))
+                    local speed = combineSpeed + speedDelta
 
                     self:setMaxSpeed(math.max(0, speed))
 
@@ -792,7 +853,7 @@ function CP_UnloaderHooks.init()
                 return superFunc(self)
             end
         )
-        print("CP_PlayerUnload: Hooked AIDriveStrategyUnloadCombine.followChopper for 5m rearward positioning")
+        print("CP_PlayerUnload: Hooked AIDriveStrategyUnloadCombine.followChopper for 5m rearward positioning & turn waiting")
     end
 
     -- 4. Hook AIDriveStrategyCombineCourse.isActiveCpCombine

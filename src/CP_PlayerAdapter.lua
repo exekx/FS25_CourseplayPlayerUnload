@@ -145,6 +145,11 @@ function CP_PlayerAdapter.new(combine, primeMover)
     self.lastPipeOpenState = false
     self.pipeCallEligible = false
     self.lastDepartedTime = 0
+    self.isTurningState = false
+    self.isReversingState = false
+    self.turningUntilTime = 0
+    self.lastHeading = nil
+    self.turnDirection = 0
     return self
 end
 
@@ -161,6 +166,73 @@ function CP_PlayerAdapter:update(dt)
         self.pipeCallEligible = false
     end
     self.lastPipeOpenState = pipeOpen
+
+    -- Dynamic turn and maneuver detection for player-driven combine / chopper
+    local currentTime = (g_currentMission and g_currentMission.time) or 0
+    local vehicle = self.combine or self.vehicle
+
+    -- 1. Normalized steering angle (-1.0 full right, +1.0 full left)
+    local steeringAngle = 0
+    if vehicle then
+        if vehicle.rotatedTime and vehicle.maxRotTime and vehicle.maxRotTime > 0 then
+            if vehicle.rotatedTime >= 0 then
+                steeringAngle = vehicle.rotatedTime / vehicle.maxRotTime
+            elseif vehicle.minRotTime and vehicle.minRotTime < 0 then
+                steeringAngle = -vehicle.rotatedTime / vehicle.minRotTime
+            end
+        elseif vehicle.getSteeringAngle then
+            local maxA = vehicle.maxSteeringAngle or 0.6
+            if maxA > 0 then
+                steeringAngle = (vehicle:getSteeringAngle() or 0) / maxA
+            end
+        end
+    end
+
+    -- 2. Yaw rate / heading change calculation
+    local headingRateDegPerSec = 0
+    local dirNode = CP_PlayerAdapter.getWorkingDirectionNode(self.combine, self.vehicle)
+    if dirNode and dirNode ~= 0 then
+        local dx, _, dz = localDirectionToWorld(dirNode, 0, 0, 1)
+        local curHeading = math.atan2(dx, dz)
+        if self.lastHeading ~= nil and dt and dt > 0 then
+            local diff = curHeading - self.lastHeading
+            while diff > math.pi do diff = diff - 2 * math.pi end
+            while diff < -math.pi do diff = diff + 2 * math.pi end
+            headingRateDegPerSec = math.deg(math.abs(diff)) / (dt / 1000.0)
+        end
+        self.lastHeading = curHeading
+    end
+
+    -- 3. Check reversing
+    local isReversing = false
+    if vehicle then
+        if vehicle.getDrivingDirection then
+            isReversing = (vehicle:getDrivingDirection() < 0)
+        end
+        local AIUtil = CP_GetCpClass("AIUtil") or _G.AIUtil
+        if not isReversing and AIUtil and AIUtil.isInReverseGear then
+            isReversing = AIUtil.isInReverseGear(vehicle)
+        end
+    end
+
+    -- 4. Evaluate turn state with hysteresis
+    local absSteering = math.abs(steeringAngle)
+    local isTurnTriggered = false
+    if absSteering > 0.28 or headingRateDegPerSec > 10.0 or isReversing then
+        isTurnTriggered = true
+        self.turningUntilTime = currentTime + 1400
+        if absSteering > 0.18 then
+            self.turnDirection = (steeringAngle > 0) and 1 or -1
+        end
+    elseif currentTime < (self.turningUntilTime or 0) then
+        if absSteering > 0.15 or headingRateDegPerSec > 5.0 or isReversing then
+            self.turningUntilTime = currentTime + 800
+            isTurnTriggered = true
+        end
+    end
+
+    self.isTurningState = isTurnTriggered
+    self.isReversingState = isReversing
 end
 
 function CP_PlayerAdapter:updateCpStatus(status)
@@ -688,21 +760,23 @@ function CP_PlayerAdapter:isOnHeadland(n)
 end
 
 function CP_PlayerAdapter:isTurning()
-    -- Return false during normal field driving so Courseplay does not interrupt dynamic
-    -- following with stale AI turnaround courses when the player steers.
-    return false
+    return self.isTurningState == true
 end
 
 function CP_PlayerAdapter:isTurningOnHeadland()
-    return false
+    return self.isTurningState == true
 end
 
 function CP_PlayerAdapter:isAboutToTurn()
-    return false
+    return self.isTurningState == true
 end
 
 function CP_PlayerAdapter:isTurningButNotEndingTurn()
-    return false
+    return self.isTurningState == true
+end
+
+function CP_PlayerAdapter:getTurnDirection()
+    return self.turnDirection or 0
 end
 
 function CP_PlayerAdapter:isTurnForwardOnly()
@@ -718,14 +792,11 @@ function CP_PlayerAdapter:isAboutToReturnFromPocket()
 end
 
 function CP_PlayerAdapter:isReversing()
-    if self.combine.getDrivingDirection then
-        return self.combine:getDrivingDirection() < 0
-    end
-    return false
+    return self.isReversingState == true
 end
 
 function CP_PlayerAdapter:isManeuvering()
-    return false
+    return self.isTurningState == true
 end
 
 function CP_PlayerAdapter:isIdle()
