@@ -203,6 +203,10 @@ function CP_UnloaderCaller.onUpdateTick(dt)
                     local fillPercent = adapter:getFillLevelPercentage()
                     local isChopper = adapter:isChopper()
 
+                    if isEntered then
+                        adapter.lastEnteredTime = currentTime
+                    end
+
                     -- 1. Check if assigned unloader is still valid and serving us
                     if adapter.assignedUnloader and type(adapter.assignedUnloader) == "table" then
                         local unloader = adapter.assignedUnloader
@@ -215,10 +219,24 @@ function CP_UnloaderCaller.onUpdateTick(dt)
                             adapter.assignedUnloader = nil
                             adapter.lastDepartedTime = currentTime
                             adapter.pipeCallEligible = false
-                        -- Physical command to DISMISS: If player folded pipe and is not discharging
-                        elseif not pipeOpen and not isDischarging then
+                        -- Physical command to DISMISS:
+                        -- For normal combines: If player folded pipe and is not discharging
+                        -- For choppers: choppers do not have folding pipes; dismiss only if player left vehicle for > 20s
+                        elseif not isChopper and not pipeOpen and not isDischarging then
                             local name = (unloader.getName and unloader:getName()) or "Tractor"
                             print(string.format("CP_PlayerUnload: Pipe folded by player, dismissing unloader '%s'", tostring(name)))
+                            if unloaderStrategy.releaseCombine then
+                                unloaderStrategy:releaseCombine()
+                            end
+                            if unloaderStrategy.startWaitingForSomethingToDo then
+                                unloaderStrategy:startWaitingForSomethingToDo()
+                            end
+                            adapter.assignedUnloader = nil
+                            adapter.lastDepartedTime = currentTime
+                            adapter.pipeCallEligible = false
+                        elseif isChopper and not isEntered and (currentTime - (adapter.lastEnteredTime or currentTime)) > 20000 then
+                            local name = (unloader.getName and unloader:getName()) or "Tractor"
+                            print(string.format("CP_PlayerUnload: Player left chopper, dismissing unloader '%s'", tostring(name)))
                             if unloaderStrategy.releaseCombine then
                                 unloaderStrategy:releaseCombine()
                             end
@@ -240,7 +258,7 @@ function CP_UnloaderCaller.onUpdateTick(dt)
                         local shouldCall = false
                         if isChopper then
                             local isWorking = adapter:isProcessingFruit() or not isStopped
-                            if pipeOpen and (isWorking or isStopped or adapter.pipeCallEligible) and canCall then
+                            if CP_UnloaderCaller.autoCallEnabled and (isWorking or adapter.pipeCallEligible) and canCall then
                                 shouldCall = true
                             end
                         else
@@ -408,6 +426,12 @@ function CP_UnloaderCaller.callBestUnloader(vehicle, isManual)
     local combineName = (adapter.combine and adapter.combine.getName and adapter.combine:getName()) or tostring(targetVehicle:getName())
     print(string.format("CP_PlayerUnload: Calling unloader '%s' for combine '%s' (carrier: '%s', speed: %.1f km/h, chopper: %s)",
         tostring(unloader:getName()), tostring(combineName), tostring(targetVehicle:getName()), targetVehicle:getLastSpeed(), tostring(adapter:isChopper())))
+
+    -- For choppers, pre-calculate the side offset before Courseplay plans pathfinding,
+    -- ensuring pathfinding aims at the lateral clearance position instead of center (x=0)
+    if adapter:isChopper() and strategy.calculateAutoAimPipeOffsetX then
+        strategy:calculateAutoAimPipeOffsetX(targetVehicle)
+    end
 
     -- ALWAYS call with nil as waypoint for player combines!
     -- This ensures Courseplay's pathfinder routes directly behind the combine (xOffset = pipeOffset, zOffset = -backDistance - 5)

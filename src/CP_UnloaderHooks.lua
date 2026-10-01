@@ -63,6 +63,72 @@ function CP_UnloaderHooks.init()
 
     CP_UnloaderHooks.isInitialized = true
 
+    if CP_ApplyEngineGuards then
+        CP_ApplyEngineGuards()
+    end
+
+    -- Hook Courseplay Markers & AIUtil to protect against nil vehicle crash
+    local Markers = CP_GetCpClass("Markers") or _G.Markers
+    if Markers then
+        if Markers.getBackMarkerNode then
+            Markers.getBackMarkerNode = Utils.overwrittenFunction(
+                Markers.getBackMarkerNode,
+                function(vehicle, superFunc, ...)
+                    if vehicle == nil or type(vehicle) ~= "table" then
+                        return nil
+                    end
+                    return superFunc(vehicle, ...)
+                end
+            )
+        end
+        if Markers.getFrontMarkerNode then
+            Markers.getFrontMarkerNode = Utils.overwrittenFunction(
+                Markers.getFrontMarkerNode,
+                function(vehicle, superFunc, ...)
+                    if vehicle == nil or type(vehicle) ~= "table" then
+                        return nil
+                    end
+                    return superFunc(vehicle, ...)
+                end
+            )
+        end
+        print("CP_PlayerUnload: Hooked Markers with nil vehicle safety guards")
+    end
+
+    local AIUtil = CP_GetCpClass("AIUtil") or _G.AIUtil
+    if AIUtil and AIUtil.getReverserNode then
+        AIUtil.getReverserNode = Utils.overwrittenFunction(
+            AIUtil.getReverserNode,
+            function(vehicle, superFunc, ...)
+                if vehicle == nil or type(vehicle) ~= "table" then
+                    return nil, "vehicle is nil"
+                end
+                return superFunc(vehicle, ...)
+            end
+        )
+        print("CP_PlayerUnload: Hooked AIUtil.getReverserNode with nil vehicle safety guard")
+    end
+
+    if AIDriveStrategyUnloadCombine and AIDriveStrategyUnloadCombine.getDistanceFromCombine then
+        AIDriveStrategyUnloadCombine.getDistanceFromCombine = Utils.overwrittenFunction(
+            AIDriveStrategyUnloadCombine.getDistanceFromCombine,
+            function(self, superFunc, combine)
+                local targetCombine = combine or self.combineToUnload
+                if targetCombine == nil or self.vehicle == nil then
+                    return 9999, 9999, 9999
+                end
+                local backNode = Markers and Markers.getBackMarkerNode and Markers.getBackMarkerNode(targetCombine)
+                local frontNode = Markers and Markers.getFrontMarkerNode and Markers.getFrontMarkerNode(self.vehicle)
+                if backNode and frontNode and backNode ~= 0 and frontNode ~= 0 then
+                    local dx, _, dz = localToLocal(backNode, frontNode, 0, 0, 0)
+                    return MathUtil.vector2Length(dx, dz), dx, dz
+                end
+                return 9999, 9999, 9999
+            end
+        )
+        print("CP_PlayerUnload: Hooked AIDriveStrategyUnloadCombine.getDistanceFromCombine with nil safety guard")
+    end
+
     -- 1. Hook AIDriveStrategyUnloadCombine:hasToWaitForAssignedCombine
     -- Prevents unloader from stopping/waiting when serving a player combine
     if AIDriveStrategyUnloadCombine and AIDriveStrategyUnloadCombine.hasToWaitForAssignedCombine then
@@ -155,33 +221,51 @@ function CP_UnloaderHooks.init()
     end
 
     -- 3b. Hook AIDriveStrategyUnloadCombine:isBehindAndAlignedToCombine
-    -- For player combines and choppers, tractor cab/rootNode is naturally ahead of trailer fill point (dz > 0),
-    -- so allow dz up to 15m ahead alongside the combine, extended distance (120m) and wider angle tolerance (50 deg)
-    -- so that the unloader never falsely aborts or cancels rendezvous!
+    -- For choppers: ensures the unloader is strictly BEHIND the chopper cab/header (dz <= -2.0m) before
+    -- engaging follow mode, preventing premature pathfinder termination and collisions with the front header.
+    -- For grain combines: allows tractor cab to be ahead of trailer fill point (dz <= 8.0m) under the pipe.
     if AIDriveStrategyUnloadCombine and AIDriveStrategyUnloadCombine.isBehindAndAlignedToCombine then
         AIDriveStrategyUnloadCombine.isBehindAndAlignedToCombine = Utils.overwrittenFunction(
             AIDriveStrategyUnloadCombine.isBehindAndAlignedToCombine,
             function(self, superFunc, debugEnabled)
                 if self.combineToUnload and CP_UnloaderCaller and CP_UnloaderCaller.activeCombines and CP_UnloaderCaller.activeCombines[self.combineToUnload] ~= nil then
+                    local strategy = self.combineToUnload:getCpDriveStrategy()
+                    local hasAutoAim = strategy and strategy.hasAutoAimPipe and strategy:hasAutoAimPipe()
                     local CpMathUtil = CP_GetCpClass("CpMathUtil") or _G.CpMathUtil
                     local dx, _, dz = localToLocal(self.vehicle.rootNode, self:getPipeOffsetReferenceNode(), 0, 0, 0)
                     local pipeOffset = self:getPipeOffset(self.combineToUnload)
                     
-                    -- Tractor pulling a trailer is naturally ahead of the trailer's fill point (dz > 0).
-                    -- Only reject if tractor has sped way ahead (> 15m) of combine.
-                    if dz > 15 then
-                        return false
+                    if hasAutoAim then
+                        -- For forage harvesters (choppers):
+                        -- Unloader MUST be behind the chopper cab/header (dz <= -2.0m) to avoid collisions with the header!
+                        if dz > -2.0 then
+                            return false
+                        end
+                        -- Distance to combine must be within reasonable rendezvous range (< 45m)
+                        local d = MathUtil.vector2Length(dx, dz)
+                        if d > 45 then
+                            return false
+                        end
+                        -- Lateral offset must be close to the chosen safe side
+                        if math.abs(dx - pipeOffset) > 4.0 then
+                            return false
+                        end
+                    else
+                        -- For grain combines:
+                        -- Tractor pulling a trailer is ahead of the trailer fill point (dz <= 8m allowed)
+                        if dz > 8.0 then
+                            return false
+                        end
+                        local d = MathUtil.vector2Length(dx, dz)
+                        if d > 50 then
+                            return false
+                        end
+                        if math.abs(dx - pipeOffset) > 3.0 then
+                            return false
+                        end
                     end
-                    local tolerance = 1.0 + 0.5 * math.abs(dz)
-                    if math.abs(dx - pipeOffset) > tolerance + 2.0 then
-                        return false
-                    end
-                    local d = MathUtil.vector2Length(dx, dz)
-                    local dLimit = 120
-                    if d > dLimit then
-                        return false
-                    end
-                    local dirLimit = 60
+
+                    local dirLimit = 45
                     local tNode = CP_PlayerAdapter.getDirectionNode(self.vehicle)
                     local cNode = self:getPipeOffsetReferenceNode() or CP_PlayerAdapter.getDirectionNode(self.combineToUnload)
                     if CpMathUtil and not CpMathUtil.isSameDirection(tNode, cNode, dirLimit) then
@@ -282,6 +366,14 @@ function CP_UnloaderHooks.init()
                     if self.combineToUnload.getRootVehicle then
                         addVeh(self.combineToUnload:getRootVehicle())
                     end
+                    local strategy = self.combineToUnload:getCpDriveStrategy()
+                    if strategy and strategy.hasAutoAimPipe and strategy:hasAutoAimPipe() then
+                        if not xOffset or math.abs(xOffset) < 1.0 then
+                            self:calculateAutoAimPipeOffsetX(self.combineToUnload)
+                            xOffset = self:getAutoAimPipeOffsetX()
+                        end
+                        zOffset = -self:getCombinesMeasuredBackDistance() - 5
+                    end
 
                     local context = PathfinderContext(self.vehicle)
                     local maxFruit = self:getMaxFruitPercent(self:getPipeOffsetReferenceNode(), xOffset, zOffset)
@@ -334,6 +426,9 @@ function CP_UnloaderHooks.init()
                 if self.combineToUnload and CP_UnloaderCaller and CP_UnloaderCaller.activeCombines and CP_UnloaderCaller.activeCombines[self.combineToUnload] ~= nil then
                     local combine = self.combineToUnload
                     local strategy = combine:getCpDriveStrategy()
+                    if strategy and strategy.hasAutoAimPipe and strategy:hasAutoAimPipe() then
+                        return self:followChopper()
+                    end
                     local CpMathUtil = CP_GetCpClass("CpMathUtil") or _G.CpMathUtil
 
                     -- 1. Measure trailer-to-pipe longitudinal distance (dz)
@@ -391,6 +486,45 @@ function CP_UnloaderHooks.init()
             end
         )
         print("CP_PlayerUnload: Hooked AIDriveStrategyUnloadCombine.driveBesideCombine for smooth tracking")
+    end
+
+    -- 3e_stopped_1. Hook AIDriveStrategyUnloadCombine:startUnloadingStoppedCombine
+    -- For choppers: ensures a stopped chopper never launches a grain combine unload course
+    -- directly towards the cab/pipe, but always follows dynamically in chopper mode.
+    if AIDriveStrategyUnloadCombine and AIDriveStrategyUnloadCombine.startUnloadingStoppedCombine then
+        AIDriveStrategyUnloadCombine.startUnloadingStoppedCombine = Utils.overwrittenFunction(
+            AIDriveStrategyUnloadCombine.startUnloadingStoppedCombine,
+            function(self, superFunc)
+                if self.combineToUnload and CP_UnloaderCaller and CP_UnloaderCaller.activeCombines and CP_UnloaderCaller.activeCombines[self.combineToUnload] ~= nil then
+                    local strategy = self.combineToUnload:getCpDriveStrategy()
+                    if strategy and strategy.hasAutoAimPipe and strategy:hasAutoAimPipe() then
+                        self:startCourseFollowingCombine()
+                        return
+                    end
+                end
+                return superFunc(self)
+            end
+        )
+        print("CP_PlayerUnload: Hooked AIDriveStrategyUnloadCombine.startUnloadingStoppedCombine")
+    end
+
+    -- 3e_stopped_2. Hook AIDriveStrategyUnloadCombine:unloadStoppedCombine
+    -- For choppers: redirects any stopped combine unload state directly to followChopper.
+    if AIDriveStrategyUnloadCombine and AIDriveStrategyUnloadCombine.unloadStoppedCombine then
+        AIDriveStrategyUnloadCombine.unloadStoppedCombine = Utils.overwrittenFunction(
+            AIDriveStrategyUnloadCombine.unloadStoppedCombine,
+            function(self, superFunc)
+                if self.combineToUnload and CP_UnloaderCaller and CP_UnloaderCaller.activeCombines and CP_UnloaderCaller.activeCombines[self.combineToUnload] ~= nil then
+                    local strategy = self.combineToUnload:getCpDriveStrategy()
+                    if strategy and strategy.hasAutoAimPipe and strategy:hasAutoAimPipe() then
+                        self:setNewState(self.states.UNLOADING_MOVING_COMBINE)
+                        return self:followChopper()
+                    end
+                end
+                return superFunc(self)
+            end
+        )
+        print("CP_PlayerUnload: Hooked AIDriveStrategyUnloadCombine.unloadStoppedCombine")
     end
 
     -- 3e_2. Hook CollisionAvoidanceController:findPotentialCollisions
@@ -541,10 +675,10 @@ function CP_UnloaderHooks.init()
                         local tractorWidth = (AIUtil and AIUtil.getWidth and AIUtil.getWidth(self.vehicle)) or 3.0
                         local harvesterChassisWidth = (AIUtil and AIUtil.getWidth and AIUtil.getWidth(harvester)) or 3.2
 
-                        -- Calculate clearance: header half-width + tractor half-width + 1.0m safety margin
+                        -- Calculate clearance: header half-width + tractor half-width + 1.2m safety margin
                         local distanceBetweenVehicles = math.max(
-                            (workWidth + tractorWidth) / 2 + 1.0,
-                            (harvesterChassisWidth + tractorWidth) / 2 + 1.5
+                            (workWidth + tractorWidth) / 2 + 1.2,
+                            (harvesterChassisWidth + tractorWidth) / 2 + 1.8
                         )
                         if self.settings and self.settings.combineOffsetX then
                             local manualX = self.settings.combineOffsetX:getValue() or 0
@@ -555,15 +689,25 @@ function CP_UnloaderHooks.init()
                         local fruitThreshold = 0.2 * 0.5 * (fruitLeft + fruitRight)
                         if strategy.isOnHeadland and strategy:isOnHeadland(1) then
                             targetOffsetX = 0
-                        elseif math.abs(fruitRight - fruitLeft) < fruitThreshold and fruitLeft > 5 then
+                        elseif (fruitLeft > 3 or fruitRight > 3) and math.abs(fruitRight - fruitLeft) < fruitThreshold then
                             -- Substantial crops on both sides -> drive directly behind chopper
                             targetOffsetX = 0
-                        elseif fruitLeft > fruitRight then
+                        elseif fruitLeft > fruitRight + 1.5 then
                             -- Significantly more fruit on left -> drive on clean right side (-X)
                             targetOffsetX = -distanceBetweenVehicles
-                        else
+                        elseif fruitRight > fruitLeft + 1.5 then
                             -- Significantly more fruit on right -> drive on clean left side (+X)
                             targetOffsetX = distanceBetweenVehicles
+                        else
+                            -- No significant difference in standing crops (e.g. grass windrows / swaths, mown fields):
+                            -- Stay on whichever side the unloader is currently located relative to the harvester!
+                            local hNode = CP_PlayerAdapter.getDirectionNode(harvester)
+                            local dx, _, _ = localToLocal(self.vehicle.rootNode, hNode, 0, 0, 0)
+                            if dx < 0 then
+                                targetOffsetX = -distanceBetweenVehicles
+                            else
+                                targetOffsetX = distanceBetweenVehicles
+                            end
                         end
 
                         if not self.autoAimPipeOffsetX then
@@ -597,6 +741,9 @@ function CP_UnloaderHooks.init()
         AIDriveStrategyUnloadCombine.followChopper = Utils.overwrittenFunction(
             AIDriveStrategyUnloadCombine.followChopper,
             function(self, superFunc)
+                if not self.combineToUnload then
+                    return nil, nil
+                end
                 if self.combineToUnload and CP_UnloaderCaller and CP_UnloaderCaller.activeCombines and CP_UnloaderCaller.activeCombines[self.combineToUnload] ~= nil then
                     local combineDirNode = CP_PlayerAdapter.getDirectionNode(self.combineToUnload)
                     local tractorDirNode = CP_PlayerAdapter.getDirectionNode(self.vehicle)

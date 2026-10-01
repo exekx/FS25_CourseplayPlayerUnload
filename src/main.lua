@@ -32,6 +32,84 @@ function CP_GetCpClass(className)
     return nil
 end
 
+-- =============================================================
+-- FS25 Engine Guards: Fix GIANTS AIVehicleUtil bugs
+-- =============================================================
+function CP_ApplyEngineGuards()
+    if AIVehicleUtil ~= nil and not AIVehicleUtil._cpGuarded then
+        AIVehicleUtil._cpGuarded = true
+
+        -- Fix GIANTS bug in AIVehicleUtil.lua:337:
+        -- In getAIToolReverserDirectionNode, GIANTS omitted vehicle.getAttachedImplements check!
+        -- Any trailer without AttacherJoints (e.g. Krampe SB 30/60) or nil vehicle crashes with:
+        -- "attempt to index nil with 'getAttachedImplements'"
+        AIVehicleUtil.getAIToolReverserDirectionNode = function(vehicle)
+            if vehicle == nil or type(vehicle) ~= "table" then
+                return nil
+            end
+            if vehicle.getAttachedImplements == nil then
+                return nil
+            end
+            local ok, implements = pcall(vehicle.getAttachedImplements, vehicle)
+            if not ok or type(implements) ~= "table" then
+                return nil
+            end
+            for _, implement in pairs(implements) do
+                if implement and implement.object ~= nil then
+                    local reverserNode = nil
+                    if implement.object.getAIToolReverserDirectionNode ~= nil then
+                        pcall(function()
+                            reverserNode = implement.object:getAIToolReverserDirectionNode()
+                        end)
+                    end
+
+                    local attachedReverserNode = AIVehicleUtil.getAIToolReverserDirectionNode(implement.object)
+                    reverserNode = reverserNode or attachedReverserNode
+
+                    if reverserNode ~= nil then
+                        return reverserNode
+                    end
+                end
+            end
+            return nil
+        end
+
+        local orig_allowTurn = AIVehicleUtil.getAttachedImplementsAllowTurnBackward
+        if orig_allowTurn then
+            AIVehicleUtil.getAttachedImplementsAllowTurnBackward = function(vehicle)
+                if vehicle == nil or type(vehicle) ~= "table" or vehicle.getAttachedImplements == nil then
+                    return true
+                end
+                return orig_allowTurn(vehicle)
+            end
+        end
+
+        local orig_blockTurn = AIVehicleUtil.getAttachedImplementsBlockTurnBackward
+        if orig_blockTurn then
+            AIVehicleUtil.getAttachedImplementsBlockTurnBackward = function(vehicle)
+                if vehicle == nil or type(vehicle) ~= "table" or vehicle.getAttachedImplements == nil then
+                    return false
+                end
+                return orig_blockTurn(vehicle)
+            end
+        end
+
+        local orig_maxRadius = AIVehicleUtil.getAttachedImplementsMaxTurnRadius
+        if orig_maxRadius then
+            AIVehicleUtil.getAttachedImplementsMaxTurnRadius = function(vehicle)
+                if vehicle == nil or type(vehicle) ~= "table" or vehicle.getAttachedImplements == nil then
+                    return -1
+                end
+                return orig_maxRadius(vehicle)
+            end
+        end
+
+        print("CP_PlayerUnload: Applied engine safety guards to AIVehicleUtil (fixes GIANTS nil getAttachedImplements bug)")
+    end
+end
+
+CP_ApplyEngineGuards()
+
 source(modDirectory .. "src/CP_VirtualCourse.lua")
 source(modDirectory .. "src/CP_PlayerAdapter.lua")
 source(modDirectory .. "src/CP_UnloaderCaller.lua")
@@ -52,6 +130,7 @@ local function onMissionLoaded(mission, node)
         return
     end
 
+    CP_ApplyEngineGuards()
     print(string.format("CP_PlayerUnload: Initializing '%s' (Author: exekx)...", tostring(modName)))
     if CP_UnloaderHooks and CP_UnloaderHooks.hookRhm then
         CP_UnloaderHooks.hookRhm()

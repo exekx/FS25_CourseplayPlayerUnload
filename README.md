@@ -4,7 +4,7 @@
 [![Courseplay Add-on](https://img.shields.io/badge/Add--on%20for-Courseplay-blue.svg)](https://github.com/Courseplay/Courseplay_FS25)
 [![GitHub Repository](https://img.shields.io/badge/GitHub-FS25__CourseplayPlayerUnload-181717?logo=github)](https://github.com/exekx/FS25_CourseplayPlayerUnload)
 [![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)](https://www.gnu.org/licenses/gpl-3.0)
-[![Version](https://img.shields.io/badge/Version-1.1.1.0-brightgreen.svg)](https://github.com/exekx/FS25_CourseplayPlayerUnload/releases)
+[![Version](https://img.shields.io/badge/Version-1.1.3.0-brightgreen.svg)](https://github.com/exekx/FS25_CourseplayPlayerUnload/releases)
 
 A standalone add-on mod for **Farming Simulator 25** and **Courseplay** that enables Courseplay AI unloader tractors to automatically approach, track, match speed, and unload combines and forage harvesters (choppers) driven by human players!
 
@@ -12,16 +12,18 @@ A standalone add-on mod for **Farming Simulator 25** and **Courseplay** that ena
 
 ---
 
-## What's New in v1.1.0.0
+## What's New in v1.1.3.0
 
-- 🌽 **Full Forage Harvester / Chopper Support:**
-  Forage harvesters without internal grain tanks/hoppers are now fully supported! When you unfold the discharge pipe/spout or turn on the cutter, the nearest Courseplay unloader is automatically called, pulls up alongside, and matches speed continuously as long as you harvest. The unloader will not leave or dismiss you due to 0% fill level.
-- 🚜 **Enhanced Trailer Alignment & Auto-Aiming:**
-  Physical discharge spout nodes are dynamically measured and synchronized with Courseplay's fruit detection. Works seamlessly with standard tipping trailers, silage trailers, and auger wagons (перевантажувачі).
-- 🛠️ **False AI Worker Fix:**
-  Fixed an issue where opening the Courseplay HUD or selecting a field/course in your combine falsely classified you as an AI worker and prevented Courseplay unloaders from detecting your combine.
-- 🌐 **Multiplayer Event Synchronization:**
-  Keyboard hotkeys (<kbd>Right Shift</kbd> + <kbd>U</kbd> / <kbd>I</kbd>) are now synchronized via network events from client to server in multiplayer sessions.
+- 🛡️ **GIANTS Engine Bug Safety Guard:**
+  Integrated an engine patch preventing repeating LUA console error spam (`AIVehicleUtil.lua:337: attempt to index nil with 'getAttachedImplements'`) whenever unloader tractors or player machines tow trailers or implements lacking rear attacher joints (e.g. Krampe SB 30/60).
+- 🌽 **Forage Harvester (Chopper) Overhaul:**
+  Fixed collisions where unloaders treated stationary or slow forage harvesters as stopped grain combines and drove directly into the cab or header. Forage harvesters now strictly operate in dynamic follow mode (`followChopper`), keeping the unloader 5m behind the chopper cab on the safe side, both when stopped and in motion.
+- 🌾 **Smart Windrow & Swath Pickup Logic:**
+  When picking up grass/hay windrows where standing crop height is uniform across the field, the unloader intelligently stays on the side it is already approaching from instead of cutting across the front of the pickup header.
+- 🎯 **Safe Side Pathfinding:**
+  Initial pathfinding routes directly to the designated lateral clearance offset behind the machine, preventing the unloader from driving through the center rear or cutting in front of the cutter.
+- ⏱️ **Dismissal Timing Fix:**
+  Prevented premature unloader dismissal on forage harvesters during the approach phase before crops begin actively discharging.
 
 ---
 

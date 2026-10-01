@@ -26,6 +26,9 @@ CP_PlayerAdapter_mt = {
         if CP_DATA_FIELDS[key] then
             return nil
         end
+        if key == "getAttachedImplements" then
+            return function() return {} end
+        end
         -- Safe fallback for any unexpected Courseplay method calls
         if type(key) == "string" and (
             key:sub(1, 2) == "is" or
@@ -42,6 +45,13 @@ CP_PlayerAdapter_mt = {
         return nil
     end
 }
+
+function CP_PlayerAdapter:getAttachedImplements()
+    if self.combine and self.combine.getAttachedImplements then
+        return self.combine:getAttachedImplements() or {}
+    end
+    return {}
+end
 
 function CP_PlayerAdapter.getDirectionNode(v)
     if v == nil then return nil end
@@ -621,6 +631,9 @@ function CP_PlayerAdapter:isPipeMoving()
 end
 
 function CP_PlayerAdapter:isPipeOpen()
+    if self:isChopper() then
+        return true
+    end
     local pipeSpec = self.combine.spec_pipe
     if pipeSpec then
         if pipeSpec.unloadingStates and pipeSpec.currentState then
@@ -641,6 +654,9 @@ function CP_PlayerAdapter:isPipeOpen()
 end
 
 function CP_PlayerAdapter:willWaitForUnloadToFinish()
+    if self:isChopper() then
+        return false -- Choppers never wait for stationary unload! Always dynamic follow.
+    end
     return self.combine:getLastSpeed() < 0.5
 end
 

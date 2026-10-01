@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8" standalone="no" ?>
 <modDesc descVersion="111">
     <author>exekx</author>
-    <version>1.1.2.0</version>
+    <version>1.1.3.0</version>
     <title>
         <en>Courseplay: Unload Me</en>
         <de>Courseplay: Unload Me</de>
@@ -10,13 +10,12 @@
     <description>
 <en><![CDATA[An add-on for Courseplay that enables Courseplay AI unloaders to automatically approach, track, and unload player-driven combines and forage harvesters!
 
-What's New in v1.1.2.0:
-- Dynamic Lateral Clearance: Unloader path dynamically scales with cutter/header width (from small 4m headers up to huge 15.2m+ cutters), ensuring comfortable clearance from wide headers while centering the trailer directly under the discharge spout.
-- Headland Turnaround & Pathfinding Fix: Unloaders route exclusively behind the combine, eliminating any risk of driving out in front of the combine header.
-- Instant Manual Re-Call: Pressing Right Shift + U immediately re-targets the unloader to your new position after turns or stops.
-- Improved Rear Approach Distance: Unloader tractors maintain a safe, realistic distance (5-7m) behind the combine's rear bumper during approach instead of tailgating.
-- Collision & Proximity Tuning: Fixed false collision stops against the player combine and attached headers.
-- Courseplay Offset Compatibility: Full support for fine-tuning via Courseplay HUD's "Combine offset X/Z" setting.
+What's New in v1.1.3.0:
+- GIANTS Engine Crash Guard: Fixed recurring LUA console errors ("attempt to index nil with 'getAttachedImplements'") caused by a missing check in the base game's AIVehicleUtil when unloaders tow trailers or implements without rear hitches (such as Krampe SB 30/60).
+- Forage Harvester (Chopper) Overhaul: Unloaders no longer mistake stationary or slow forage harvesters for stopped grain combines. Unloaders now strictly operate in dynamic follow mode, maintaining a safe 5m rearward standoff distance behind the chopper cab and away from front headers.
+- Swath & Windrow Pickup Optimization: When picking up grass/hay windrows where crop height is uniform on both sides, unloaders intelligently approach and stay on the side they are already coming from instead of cutting across the front header.
+- Safe Pathfinding Target: Initial pathfinding routes directly to the designated lateral clearance offset behind the machine, eliminating pathing through the center rear bumper or header.
+- Forage Harvester Dismissal Fix: Unloaders are no longer prematurely dismissed when forage harvesters are not yet actively discharging fruit during approach.
 
 How Calling Works:
 - Opening the Pipe (Always Active): Unfolding your discharge pipe/spout (or turning on cutter for forage harvesters) is a direct physical signal that ALWAYS calls an unloader to your machine automatically! Folding the pipe tells the unloader to depart (or cancels the call if still driving to you).
@@ -44,12 +43,12 @@ Credits:
 
 <de><![CDATA[Ein Add-on für Courseplay, das es Courseplay-Abfahrern ermöglicht, vom Spieler gesteuerte Mähdrescher und Feldhäcksler automatisch anzufahren, zu begleiten und abzutanken!
 
-Neu in v1.1.2.0:
-- Dynamischer Seitenabstand: Der Fahrweg des Abfahrers passt sich automatisch an die Schneidwerksbreite an (von 4m bis 15.2m+), hält sicheren Abstand zu breiten Schneidwerken und zentriert den Anhänger unter dem Rohr.
-- Vorgewende- und Anfahr-Korrektur: Abfahrer navigieren nun zuverlässig hinter den Drescher und schneiden niemals den Weg vor dem Schneidwerk ab.
-- Sofortiger manueller Wiederabruf: Rechte Umschalttaste + U ruft den Abfahrer nach Wendemanövern sofort zur aktuellen Position zurück.
-- Sicherer Heckabstand: Traktoren halten bei der Annäherung einen realistischen Sicherheitsabstand (5-7m) hinter dem Drescherheck.
-- Kollisionsoptimierung: Fehlstopps durch Erkennung des Spielerdreschers oder Schneidwerks wurden behoben.
+Neu in v1.1.3.0:
+- GIANTS-Engine-Fehlerschutz: Behebt wiederkehrende LUA-Fehler ("attempt to index nil with 'getAttachedImplements'"), die durch eine fehlende Prüfung im Basisspiel bei Anhängern ohne Heck-Kupplung (z. B. Krampe SB 30/60) auftraten.
+- Feldhäcksler-Überarbeitung: Abfahrer verwechseln stehende oder langsame Häcksler nicht mehr mit Mähdreschern. Abfahrer bleiben durchgehend im Häcksler-Folgeregiem mit sicherem 5m-Rückstand hinter der Kabine und sicherem Abstand zum Vorsatz.
+- Schwad- und Pickup-Optimierung: Beim Aufnehmen von Grasschwaden ohne hohe Nachbarfrüchte bleibt der Abfahrer intelligent auf der Seite, von der er anfährt, anstatt vor dem Schneidwerk die Seite zu kreuzen.
+- Sicheres Pathfinding: Die Zielposition der Wegfindung zielt von der ersten Sekunde an auf den seitlichen Sicherheitsabstand hinter der Maschine.
+- Häcksler-Abmeldekorrektur: Kein vorzeitiges Entlassen des Abfahrers mehr, solange der Häcksler noch auf das Eintreffen des Gespanns wartet.
 
 Wie der Abruf funktioniert:
 - Rohr ausfahren (Immer aktiv): Das Ausfahren des Abtankrohrs/Auswurfbogens ruft IMMER automatisch einen Abfahrer, unabhängig von allen Einstellungen! Das Einfahren des Rohrs beendet das Abtanken und schickt den Abfahrer weg.
@@ -77,12 +76,12 @@ Credits:
 
 <fr><![CDATA[Une extension pour Courseplay qui permet aux tracteurs-bennes IA de Courseplay d'approcher, de suivre et de décharger automatiquement les moissonneuses et ensileuses conduites par le joueur !
 
-Nouveautés v1.1.2.0 :
-- Dégagement latéral dynamique : La trajectoire de la benne s'adapte automatiquement à la largeur de coupe (de 4m à plus de 15.2m), garantissant un espace sécurisé avec les grandes barres de coupe et centrant la benne sous la buse.
-- Amélioration des manœuvres en bout de champ : Les bennes contournent toujours par l'arrière et ne coupent plus devant la barre de coupe.
-- Rappel manuel instantané : Maj droite + U réassigne immédiatement la benne à votre nouvelle position après un demi-tour.
-- Distance d'approche sécurisée : Maintien d'un écart réaliste (5-7m) derrière l'arrière de la moissonneuse pendant l'approche.
-- Optimisation anticollision : Fin des faux arrêts d'urgence contre la moissonneuse du joueur.
+Nouveautés v1.1.3.0 :
+- Correctif de sécurité GIANTS Engine : Résolution des erreurs LUA répétitives ("attempt to index nil with 'getAttachedImplements'") causées par un bug du jeu de base avec les remorques sans attache arrière (comme la Krampe SB 30/60).
+- Refonte du suivi des ensileuses : Les bennes ne confondent plus les ensileuses à l'arrêt avec des moissonneuses standards. Le mode de suivi dynamique reste actif en permanence à 5 m en retrait de la cabine, évitant tout contact avec le pick-up/bec.
+- Optimisation pour le ramassage d'andains : Lors du ramassage d'herbe ou de paille en andains, la benne reste du côté d'où elle arrive sans jamais couper devant l'ensileuse.
+- Guidage et trajectoire sécurisés : La trajectoire d'approche cible directement la position latérale sécurisée derrière la machine.
+- Correction du renvoi prématuré : L'ensileuse ne renvoie plus la benne prématurément avant que le chargement n'ait commencé.
 
 Fonctionnement de l'appel :
 - Dépliage de la buse (Toujours actif) : Déplier votre buse de vidange appelle TOUJOURS automatiquement une benne Courseplay ! Replier la buse indique à la benne de repartir.
