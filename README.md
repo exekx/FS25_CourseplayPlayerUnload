@@ -15,20 +15,22 @@ A standalone add-on mod for **Farming Simulator 25** and **Courseplay** that ena
 ## What's New in v1.1.4.0
 
 - 🔄 **Deep Turn & Headland Maneuver Detection:**
-  The unloader tractor/truck now dynamically tracks multiple physical indicators to detect when a player combine or forage harvester is turning at row ends or headlands:
+  The unloader tractor/truck dynamically tracks multiple physical indicators to detect when a player combine or forage harvester is turning at row ends or headlands:
   - **Cutter / Pickup Lifted Status:** Detects when headers, cutters, or swath pickups are raised (`getIsLowered == false`).
   - **Active Harvesting & Crop Flow:** Directly reads internal machine feeding slots (`loadingDelaySlots`, `isChopperFilling`, `isDischarging`). If no crop is being processed while steering, a headland turn is immediately recognized.
   - **Steering Lock, Yaw Rate & Reversing:** Distinguishes normal row driving from sharp turns, reverse 3-point turns, and headland swings.
-- ⚡ **Instant Turn Completion:**
-  As soon as the player lowers the header onto the swath or centers steering on the new row, the turn state finishes instantly with zero delay!
-- ↪️ **Autonomous Headland Turnaround Arc:**
-  Fixed unloader freezing at headlands after the player turned 180 degrees. Instead of stalling or deadlocking on opposite headings, the unloader actively steers forward in an arc across the headland, loops 180° onto the new row, and rendezvous smoothly behind the combine!
+- 🛑 **Headland Waiting & Full Turning Clearance:**
+  Unloader tractors stop cleanly in place at the end of the swath during turn maneuvers, giving the combine 100% free space to complete its turn without collisions or crowding.
+- ⚡ **Instant Turn Completion & Seamless Resume:**
+  As soon as the player lowers the header onto the new swath or centers steering on the new row, the turn state finishes instantly and the unloader smoothly rejoins the combine on the new row without freezing or deadlocking!
+- 🌾 **Swath & Windrow Side Selection:**
+  When picking up swaths with pickups, unloaders intelligently maintain the side of approach or respect manual Courseplay offset (+X left, -X right).
 - 🛡️ **Courseplay Chopper Turn State Safety Guards:**
   Intercepts internal Courseplay chopper turn states (`startChopperTurn`, `handleChopper180Turn`, `handleChopperHeadlandTurn`) so unloaders never get trapped in non-existent AI fieldwork courses with empty waypoints (`--/--`).
 - 🛡️ **GIANTS Engine Bug Safety Guard:**
   Integrated an engine patch preventing repeating LUA console error spam (`AIVehicleUtil.lua:337: attempt to index nil with 'getAttachedImplements'`) whenever unloader tractors or player machines tow trailers or implements lacking rear attacher joints (e.g. Krampe SB 30/60).
-- 🌽 **Forage Harvester (Chopper) Standoff:**
-  Unloaders maintain a safe 5m rearward standoff distance behind the chopper cab on the safe side, both when stopped and in motion.
+- 🌽 **Forage Harvester (Chopper) Safe Standoff:**
+  Unloaders maintain a safe 5m rearward standoff distance behind the chopper cab under the spout and dynamically track crop sides.
 
 ---
 

@@ -12,11 +12,12 @@
 
 What's New in v1.1.4.0:
 - Deep Turn Detection & Headland Rozvorot: Comprehensive multi-factor turn detection on player-driven harvesters. Monitors cutter/pickup lifted state (getIsLowered), active crop processing (loadingDelaySlots, isChopperFilling, isDischarging), steering angle, yaw rate, and reversing.
-- Instant Turn Completion: As soon as the player lowers the header onto the swath or centers steering on the new row, the turn state finishes instantly with zero delay!
-- Autonomous Turnaround Arc: Solved unloader freezing at headlands after player turns 180 degrees. Instead of stalling or deadlocking on opposite headings, the unloader actively steers forward in an arc across the headland, loops 180° onto the new row, and rendezvous smoothly behind the combine!
+- Headland Waiting & Space Clearance: Unloader tractors stop cleanly in place at the end of the swath during turn maneuvers, giving the combine 100% free room to turn without collisions or crowding.
+- Instant Turn Completion & Smooth Resume: As soon as the player lowers the header onto the new swath or centers steering, the turn state finishes instantly and the unloader smoothly rejoins the combine on the new row without freezing or deadlocking!
+- Swath & Windrow Side Selection: When picking up swaths with pickups, unloaders intelligently maintain the side of approach or respect manual Courseplay offset (+X left, -X right).
 - Turn State Safety Guards: Overrides Courseplay's internal chopper turn states (startChopperTurn, handleChopper180Turn, handleChopperHeadlandTurn) so unloaders never get trapped in non-existent AI fieldwork courses with empty waypoints (--/--).
 - GIANTS Engine Crash Guard: Fixed recurring LUA console errors ("attempt to index nil with 'getAttachedImplements'") caused by a missing check in the base game's AIVehicleUtil when unloaders tow trailers or implements without rear hitches (such as Krampe SB 30/60).
-- Forage Harvester (Chopper) Overhaul: Unloaders maintain a safe 5m rearward standoff distance behind the chopper cab and dynamically track crop sides.
+- Forage Harvester (Chopper) Overhaul: Unloaders maintain a safe 5m rearward standoff distance behind the chopper cab under the spout and dynamically track crop sides.
 
 How Calling Works:
 - Opening the Pipe (Always Active): Unfolding your discharge pipe/spout (or turning on cutter for forage harvesters) is a direct physical signal that ALWAYS calls an unloader to your machine automatically! Folding the pipe tells the unloader to depart (or cancels the call if still driving to you).
@@ -44,11 +45,14 @@ Credits:
 
 <de><![CDATA[Ein Add-on für Courseplay, das es Courseplay-Abfahrern ermöglicht, vom Spieler gesteuerte Mähdrescher und Feldhäcksler automatisch anzufahren, zu begleiten und abzutanken!
 
-Neu in v1.1.3.1:
-- Intelligentes Warten bei Wendemanövern: Der Abfahrer erkennt nun dynamisch, wenn der Spieler am Reihenende oder Vorgewende wendet (durch Überwachung von Lenkwinkel, Gierrate und Rückwärtsgang). Statt dem Drescher in die Kurve zu folgen und den Wenderadius einzuschränken, hält der Abfahrer an (oder setzt zurück, falls der Drescher zu ihm hin wendet) und lässt den Wendeplatz völlig frei. Sobald der Spieler fertig gewendet hat und in der neuen Reihe anfährt, schließt der Abfahrer sanft wieder auf!
+Neu in v1.1.4.0:
+- Umfassende Wendemanöver-Erkennung: Erkennt dynamisch, wenn der Spieler am Reihenende wendet – überwacht Schneidwerks-/Pickup-Status (angehoben getIsLowered), aktiven Gutfluss (loadingDelaySlots, isChopperFilling, isDischarging), Lenkwinkel, Gierrate und Rückwärtsgang.
+- Intelligentes Warten am Vorgewende: Der Abfahrer hält am Ende der Schwad sauber an und hält die Position, sodass der Drescher/Häcksler den vollen Wenderadius kollisionsfrei nutzen kann.
+- Sofortige Wende-Beendigung & flüssiges Aufschließen: Sobald das Schneidwerk in der neuen Reihe abgesenkt wird, endet der Wendemodus sofort und der Abfahrer schließt zügig und ruckelfrei wieder auf!
 - Schwad- und Pickup-Seitenwahl: Beim Aufnehmen von Grasschwaden bleibt der Abfahrer intelligent auf der Seite, von der er anfährt, oder folgt der manuellen Courseplay-Versatz-Einstellung (+X links, -X rechts).
+- Courseplay-Schutz vor Geisterkursen: Verhindert das Umschalten in interne CP-Wendezustände (startChopperTurn) ohne gültige Wegpunkte (--/--).
 - GIANTS-Engine-Fehlerschutz: Behebt wiederkehrende LUA-Fehler ("attempt to index nil with 'getAttachedImplements'") bei Anhängern ohne Heck-Kupplung (z. B. Krampe SB 30/60).
-- Feldhäcksler-Überarbeitung: Abfahrer verwechseln stehende Häcksler nicht mehr mit Mähdreschern und halten 5m Sicherheitsabstand hinter der Kabine.
+- Feldhäcksler-Überarbeitung: Abfahrer halten 5m Sicherheitsabstand hinter der Kabine direkt unter dem Auswurfbogen.
 
 Wie der Abruf funktioniert:
 - Rohr ausfahren (Immer aktiv): Das Ausfahren des Abtankrohrs/Auswurfbogens ruft IMMER automatisch einen Abfahrer! Das Einfahren beendet das Abtanken.
@@ -76,11 +80,14 @@ Credits:
 
 <fr><![CDATA[Une extension pour Courseplay qui permet aux tracteurs-bennes IA de Courseplay d'approcher, de suivre et de décharger automatiquement les moissonneuses et ensileuses conduites par le joueur !
 
-Nouveautés v1.1.3.1 :
-- Attente intelligente lors des demi-tours : La benne détecte désormais dynamiquement lorsque le joueur effectue un demi-tour ou une manœuvre en bout de champ (angle de braquage, rotation, marche arrière). Au lieu de suivre la machine dans son virage et d'encombrer le rayon de braquage, la benne s'arrête (ou recule si la machine tourne vers elle) et laisse la fourrière entièrement dégagée. Dès que le joueur s'aligne dans le rang suivant, la benne reprend le suivi en douceur !
+Nouveautés v1.1.4.0 :
+- Détection avancée des demi-tours : Détecte dynamiquement les manœuvres en bout de champ via l'état de la barre de coupe/du pick-up (levé getIsLowered), le flux de récolte actif (loadingDelaySlots, isChopperFilling, isDischarging), l'angle de braquage et la marche arrière.
+- Attente propre en fourrière : La benne s'arrête net au bout du rang pour laisser tout l'espace nécessaire à la machine pour manœuvrer sans encombrement ni collision.
+- Fin de virage instantanée et reprise fluide : Dès que la coupe est baissée dans le nouveau rang, le virage se termine instantanément et la benne rejoint la machine en douceur sans se figer !
 - Choix intelligent du côté sur les andains : Sur les andains d'herbe ou de paille, la benne reste du côté d'où elle arrive ou respecte le décalage manuel Courseplay (+X gauche, -X droite).
+- Sécurité contre les cours fantômes CP : Empêche le basculement dans les états de virage internes CP (startChopperTurn) sans points de passage (--/--).
 - Correctif de sécurité GIANTS Engine : Résolution des erreurs LUA répétitives ("attempt to index nil with 'getAttachedImplements'") avec les remorques sans attache arrière (comme la Krampe SB 30/60).
-- Refonte ensileuse : Suivi dynamique fluide avec recul sécurisé de 5 m derrière la cabine.
+- Refonte ensileuse : Suivi dynamique fluide avec recul sécurisé de 5 m derrière la cabine sous la buse.
 
 Fonctionnement de l'appel :
 - Dépliage de la buse (Toujours actif) : Déplier votre buse appelle TOUJOURS automatiquement une benne Courseplay ! Replier la buse indique à la benne de repartir.
