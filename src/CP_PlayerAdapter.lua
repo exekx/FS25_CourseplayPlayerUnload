@@ -53,6 +53,18 @@ function CP_PlayerAdapter:getAttachedImplements()
     return {}
 end
 
+function CP_PlayerAdapter.isPlayerCombine(vehicle)
+    if not vehicle then return false end
+    if CP_UnloaderCaller and CP_UnloaderCaller.activeCombines and CP_UnloaderCaller.activeCombines[vehicle] ~= nil then
+        return true
+    end
+    local strategy = vehicle.getCpDriveStrategy and vehicle:getCpDriveStrategy()
+    if strategy and strategy.isVirtualCpStrategy then
+        return true
+    end
+    return false
+end
+
 function CP_PlayerAdapter.getDirectionNode(v)
     if v == nil then return nil end
     if v.aiDirectionNode ~= nil and v.aiDirectionNode ~= 0 then
@@ -171,7 +183,25 @@ function CP_PlayerAdapter:update(dt)
     local currentTime = (g_currentMission and g_currentMission.time) or 0
     local vehicle = self.combine or self.vehicle
 
-    -- 1. Normalized steering angle (-1.0 full right, +1.0 full left)
+    -- 1. Check cutter/header status (lifted vs lowered)
+    local hasCutter = false
+    local cutterLifted = false
+    if vehicle and vehicle.getAttachedImplements then
+        local ok, implements = pcall(vehicle.getAttachedImplements, vehicle)
+        if ok and type(implements) == "table" then
+            for _, implement in pairs(implements) do
+                local obj = implement and implement.object
+                if obj and (obj.spec_cutter ~= nil or obj.spec_pickup ~= nil or obj.spec_workArea ~= nil) then
+                    hasCutter = true
+                    if obj.getIsLowered and not obj:getIsLowered() then
+                        cutterLifted = true
+                    end
+                end
+            end
+        end
+    end
+
+    -- 2. Normalized steering angle (-1.0 full right, +1.0 full left)
     local steeringAngle = 0
     if vehicle then
         if vehicle.rotatedTime and vehicle.maxRotTime and vehicle.maxRotTime > 0 then
@@ -188,7 +218,7 @@ function CP_PlayerAdapter:update(dt)
         end
     end
 
-    -- 2. Yaw rate / heading change calculation
+    -- 3. Yaw rate / heading change calculation
     local headingRateDegPerSec = 0
     local dirNode = CP_PlayerAdapter.getWorkingDirectionNode(self.combine, self.vehicle)
     if dirNode and dirNode ~= 0 then
@@ -203,7 +233,7 @@ function CP_PlayerAdapter:update(dt)
         self.lastHeading = curHeading
     end
 
-    -- 3. Check reversing
+    -- 4. Check reversing
     local isReversing = false
     if vehicle then
         if vehicle.getDrivingDirection then
@@ -215,24 +245,74 @@ function CP_PlayerAdapter:update(dt)
         end
     end
 
-    -- 4. Evaluate turn state with hysteresis
+    -- 5. Check if actively harvesting / collecting crops
+    local isHarvesting = false
+    local combineObj = self.combine or vehicle
+    if combineObj and combineObj.spec_combine then
+        local cSpec = combineObj.spec_combine
+        if cSpec.loadingDelaySlots then
+            for i = 1, #cSpec.loadingDelaySlots do
+                if cSpec.loadingDelaySlots[i].valid then
+                    isHarvesting = true
+                    break
+                end
+            end
+        end
+        if cSpec.isChopperFilling then
+            isHarvesting = true
+        end
+    end
+    if self:isDischarging() then
+        isHarvesting = true
+    end
+
+    -- 6. Evaluate turn state with cutter & harvesting awareness
     local absSteering = math.abs(steeringAngle)
     local isTurnTriggered = false
-    if absSteering > 0.28 or headingRateDegPerSec > 10.0 or isReversing then
+    if isReversing then
         isTurnTriggered = true
-        self.turningUntilTime = currentTime + 1400
-        if absSteering > 0.18 then
+        self.turningUntilTime = currentTime + 1000
+    elseif hasCutter and cutterLifted and (absSteering > 0.08 or headingRateDegPerSec > 2.5) then
+        -- Cutter is lifted and combine is turning wheels / rotating -> headland turn!
+        isTurnTriggered = true
+        self.turningUntilTime = currentTime + 1000
+        if absSteering > 0.08 then
             self.turnDirection = (steeringAngle > 0) and 1 or -1
         end
-    elseif currentTime < (self.turningUntilTime or 0) then
-        if absSteering > 0.15 or headingRateDegPerSec > 5.0 or isReversing then
-            self.turningUntilTime = currentTime + 800
+    elseif (not isHarvesting) and (absSteering > 0.12 or headingRateDegPerSec > 3.5) then
+        -- Not picking up crop and turning -> headland maneuver!
+        isTurnTriggered = true
+        self.turningUntilTime = currentTime + 1000
+        if absSteering > 0.12 then
+            self.turnDirection = (steeringAngle > 0) and 1 or -1
+        end
+    elseif absSteering > 0.25 or headingRateDegPerSec > 7.0 then
+        -- Sharp steering / rotation
+        isTurnTriggered = true
+        self.turningUntilTime = currentTime + 1000
+        if absSteering > 0.12 then
+            self.turnDirection = (steeringAngle > 0) and 1 or -1
+        end
+    end
+
+    -- Instant turn completion check:
+    -- If combine is actively harvesting crop, or if the cutter is lowered and wheels are straight/stable:
+    -- Turn is FINISHED IMMEDIATELY!
+    if isTurnTriggered or (currentTime < (self.turningUntilTime or 0)) then
+        local isCutterReady = (not hasCutter or not cutterLifted)
+        local isCenteredAndStable = (absSteering < 0.12 and headingRateDegPerSec < 3.0 and not isReversing)
+        if (isHarvesting and isCutterReady and not isReversing) or (isCenteredAndStable and isCutterReady) then
+            isTurnTriggered = false
+            self.turningUntilTime = 0
+        else
             isTurnTriggered = true
         end
     end
 
     self.isTurningState = isTurnTriggered
     self.isReversingState = isReversing
+    self.cutterLiftedState = cutterLifted
+    self.isHarvestingState = isHarvesting
 end
 
 function CP_PlayerAdapter:updateCpStatus(status)
@@ -768,7 +848,7 @@ function CP_PlayerAdapter:isTurningOnHeadland()
 end
 
 function CP_PlayerAdapter:isAboutToTurn()
-    return self.isTurningState == true
+    return self.isTurningState == true or (self.cutterLiftedState == true and self.isHarvestingState ~= true)
 end
 
 function CP_PlayerAdapter:isTurningButNotEndingTurn()
@@ -831,18 +911,24 @@ function CP_PlayerAdapter:alwaysNeedsUnloader()
 end
 
 function CP_PlayerAdapter:isProcessingFruit()
-    local spec = self.combine.spec_combine
-    if spec and spec.isChopperFilling then
-        return true
-    end
-    if spec and spec.attachedCutters then
-        for cutter, _ in pairs(spec.attachedCutters) do
-            if cutter.getIsTurnedOn and cutter:getIsTurnedOn() then
-                return true
+    local combineObj = self.combine or self.vehicle
+    if combineObj and combineObj.spec_combine then
+        local cSpec = combineObj.spec_combine
+        if cSpec.loadingDelaySlots then
+            for i = 1, #cSpec.loadingDelaySlots do
+                if cSpec.loadingDelaySlots[i].valid then
+                    return true
+                end
             end
         end
+        if cSpec.isChopperFilling then
+            return true
+        end
     end
-    return self.combine.getIsTurnedOn and self.combine:getIsTurnedOn()
+    if self:isDischarging() then
+        return true
+    end
+    return false
 end
 
 function CP_PlayerAdapter:getWorkWidth()

@@ -4,7 +4,7 @@
 [![Courseplay Add-on](https://img.shields.io/badge/Add--on%20for-Courseplay-blue.svg)](https://github.com/Courseplay/Courseplay_FS25)
 [![GitHub Repository](https://img.shields.io/badge/GitHub-FS25__CourseplayPlayerUnload-181717?logo=github)](https://github.com/exekx/FS25_CourseplayPlayerUnload)
 [![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)](https://www.gnu.org/licenses/gpl-3.0)
-[![Version](https://img.shields.io/badge/Version-1.1.3.1-brightgreen.svg)](https://github.com/exekx/FS25_CourseplayPlayerUnload/releases)
+[![Version](https://img.shields.io/badge/Version-1.1.4.0-brightgreen.svg)](https://github.com/exekx/FS25_CourseplayPlayerUnload/releases)
 
 A standalone add-on mod for **Farming Simulator 25** and **Courseplay** that enables Courseplay AI unloader tractors to automatically approach, track, match speed, and unload combines and forage harvesters (choppers) driven by human players!
 
@@ -12,16 +12,23 @@ A standalone add-on mod for **Farming Simulator 25** and **Courseplay** that ena
 
 ---
 
-## What's New in v1.1.3.1
+## What's New in v1.1.4.0
 
-- 🔄 **Smart Turn Waiting & Headland Maneuver Space:**
-  The unloader tractor/truck now dynamically detects when the player-driven combine or forage harvester is executing a turn or headland maneuver (monitoring steering lock angle, yaw rate, and reversing). Instead of following the combine through the turn and crowding the turn radius, the unloader holds back and stops completely at the row end (or reverses straight back if the combine turns toward it), leaving the headland 100% free. Once the combine finishes turning and aligns on the new row, the unloader smoothly catches up and resumes unloading!
-- ↔️ **Swath & Windrow Pickup Side Selection:**
-  When picking up grass/hay windrows where standing crop height is uniform across the field, the unloader intelligently stays on the side it is already approaching from instead of cutting across the front of the pickup header. Also respects manual Courseplay Combine Offset X (+X for left, -X for right).
+- 🔄 **Deep Turn & Headland Maneuver Detection:**
+  The unloader tractor/truck now dynamically tracks multiple physical indicators to detect when a player combine or forage harvester is turning at row ends or headlands:
+  - **Cutter / Pickup Lifted Status:** Detects when headers, cutters, or swath pickups are raised (`getIsLowered == false`).
+  - **Active Harvesting & Crop Flow:** Directly reads internal machine feeding slots (`loadingDelaySlots`, `isChopperFilling`, `isDischarging`). If no crop is being processed while steering, a headland turn is immediately recognized.
+  - **Steering Lock, Yaw Rate & Reversing:** Distinguishes normal row driving from sharp turns, reverse 3-point turns, and headland swings.
+- ⚡ **Instant Turn Completion:**
+  As soon as the player lowers the header onto the swath or centers steering on the new row, the turn state finishes instantly with zero delay!
+- ↪️ **Autonomous Headland Turnaround Arc:**
+  Fixed unloader freezing at headlands after the player turned 180 degrees. Instead of stalling or deadlocking on opposite headings, the unloader actively steers forward in an arc across the headland, loops 180° onto the new row, and rendezvous smoothly behind the combine!
+- 🛡️ **Courseplay Chopper Turn State Safety Guards:**
+  Intercepts internal Courseplay chopper turn states (`startChopperTurn`, `handleChopper180Turn`, `handleChopperHeadlandTurn`) so unloaders never get trapped in non-existent AI fieldwork courses with empty waypoints (`--/--`).
 - 🛡️ **GIANTS Engine Bug Safety Guard:**
   Integrated an engine patch preventing repeating LUA console error spam (`AIVehicleUtil.lua:337: attempt to index nil with 'getAttachedImplements'`) whenever unloader tractors or player machines tow trailers or implements lacking rear attacher joints (e.g. Krampe SB 30/60).
-- 🌽 **Forage Harvester (Chopper) Overhaul:**
-  Fixed collisions where unloaders treated stationary or slow forage harvesters as stopped grain combines. Harvesters now strictly operate in dynamic follow mode (`followChopper`), keeping the unloader 5m behind the chopper cab on the safe side, both when stopped and in motion.
+- 🌽 **Forage Harvester (Chopper) Standoff:**
+  Unloaders maintain a safe 5m rearward standoff distance behind the chopper cab on the safe side, both when stopped and in motion.
 
 ---
 

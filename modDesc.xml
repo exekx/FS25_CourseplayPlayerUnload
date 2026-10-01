@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8" standalone="no" ?>
 <modDesc descVersion="111">
     <author>exekx</author>
-    <version>1.1.3.1</version>
+    <version>1.1.4.0</version>
     <title>
         <en>Courseplay: Unload Me</en>
         <de>Courseplay: Unload Me</de>
@@ -10,11 +10,13 @@
     <description>
 <en><![CDATA[An add-on for Courseplay that enables Courseplay AI unloaders to automatically approach, track, and unload player-driven combines and forage harvesters!
 
-What's New in v1.1.3.1:
-- Dynamic Turn Waiting & Headland Space: Unloaders now detect when the player combine or forage harvester is turning at row ends/headlands (evaluating steering lock, yaw rate, and reversing). Instead of following the machine through the turn and crowding the turn radius, the unloader holds back and stops (or reverses if the combine turns toward it), leaving the headland 100% clear. Once the player finishes the turn and straightens out on the new row, the unloader smoothly catches up and resumes unloading!
-- Swath & Windrow Pickup Side Selection: When picking up grass/hay swaths where crop height is uniform on both sides, unloaders intelligently approach and stay on the side they are already coming from instead of cutting across the front header. Also respects manual Courseplay Combine Offset X (+X for left, -X for right).
+What's New in v1.1.4.0:
+- Deep Turn Detection & Headland Rozvorot: Comprehensive multi-factor turn detection on player-driven harvesters. Monitors cutter/pickup lifted state (getIsLowered), active crop processing (loadingDelaySlots, isChopperFilling, isDischarging), steering angle, yaw rate, and reversing.
+- Instant Turn Completion: As soon as the player lowers the header onto the swath or centers steering on the new row, the turn state finishes instantly with zero delay!
+- Autonomous Turnaround Arc: Solved unloader freezing at headlands after player turns 180 degrees. Instead of stalling or deadlocking on opposite headings, the unloader actively steers forward in an arc across the headland, loops 180° onto the new row, and rendezvous smoothly behind the combine!
+- Turn State Safety Guards: Overrides Courseplay's internal chopper turn states (startChopperTurn, handleChopper180Turn, handleChopperHeadlandTurn) so unloaders never get trapped in non-existent AI fieldwork courses with empty waypoints (--/--).
 - GIANTS Engine Crash Guard: Fixed recurring LUA console errors ("attempt to index nil with 'getAttachedImplements'") caused by a missing check in the base game's AIVehicleUtil when unloaders tow trailers or implements without rear hitches (such as Krampe SB 30/60).
-- Forage Harvester (Chopper) Overhaul: Unloaders no longer mistake stationary or slow forage harvesters for stopped grain combines, maintaining a safe 5m rearward standoff distance behind the chopper cab.
+- Forage Harvester (Chopper) Overhaul: Unloaders maintain a safe 5m rearward standoff distance behind the chopper cab and dynamically track crop sides.
 
 How Calling Works:
 - Opening the Pipe (Always Active): Unfolding your discharge pipe/spout (or turning on cutter for forage harvesters) is a direct physical signal that ALWAYS calls an unloader to your machine automatically! Folding the pipe tells the unloader to depart (or cancels the call if still driving to you).
