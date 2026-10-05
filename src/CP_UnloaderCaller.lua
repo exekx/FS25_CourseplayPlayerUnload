@@ -8,7 +8,7 @@ CP_UnloaderCaller = {}
 CP_UnloaderCaller.activeCombines = {}
 CP_UnloaderCaller.autoCallEnabled = false
 CP_UnloaderCaller.callThresholdPercent = 80.0
-CP_UnloaderCaller.maxSearchDistance = 600.0
+CP_UnloaderCaller.maxSearchDistance = 4000.0 -- expanded from 600m to 4000m for large fields (Issue 2)
 CP_UnloaderCaller.autoCallCooldown = 3000 -- ms
 CP_UnloaderCaller.lastAutoCallTime = 0
 
@@ -25,26 +25,40 @@ local function showNotification(text)
     end
 end
 
+local function isHarvesterObject(obj)
+    if obj == nil or obj.isDeleted then return false end
+    -- Exclude trailers, grain carts / auger wagons, slurry tanks
+    if obj.spec_trailer ~= nil then
+        return false
+    end
+    if obj.spec_combine ~= nil or obj.spec_forageHarvester ~= nil then
+        return true
+    end
+    -- Trailed harvesters (cutters/workareas that are not trailers)
+    if (obj.spec_cutter ~= nil or obj.spec_workArea ~= nil) and obj.spec_pipe ~= nil and obj.spec_dischargeable ~= nil then
+        return true
+    end
+    return false
+end
+
 function CP_UnloaderCaller.findCombineAndCarrier(vehicle)
-    if vehicle == nil then return nil, nil end
+    if vehicle == nil or vehicle.isDeleted then return nil, nil end
     -- 1. Vehicle itself is a combine / forage harvester
-    if vehicle.spec_combine ~= nil or vehicle.spec_forageHarvester ~= nil then
+    if isHarvesterObject(vehicle) then
         return vehicle, vehicle
     end
     -- 2. Carrier vehicle (NEXAT) or tractor with attached harvester
     if vehicle.getAttachedImplements ~= nil then
         for _, impl in pairs(vehicle:getAttachedImplements()) do
             local obj = impl.object
-            if obj ~= nil then
-                if obj.spec_combine ~= nil or obj.spec_forageHarvester ~= nil or (obj.spec_pipe ~= nil and obj.spec_dischargeable ~= nil) then
-                    return obj, vehicle
-                end
-                if obj.getAttachedImplements ~= nil then
-                    for _, subImpl in pairs(obj:getAttachedImplements()) do
-                        local subObj = subImpl.object
-                        if subObj ~= nil and (subObj.spec_combine ~= nil or subObj.spec_forageHarvester ~= nil or (subObj.spec_pipe ~= nil and subObj.spec_dischargeable ~= nil)) then
-                            return subObj, vehicle
-                        end
+            if isHarvesterObject(obj) then
+                return obj, vehicle
+            end
+            if obj and obj.getAttachedImplements ~= nil then
+                for _, subImpl in pairs(obj:getAttachedImplements()) do
+                    local subObj = subImpl.object
+                    if isHarvesterObject(subObj) then
+                        return subObj, vehicle
                     end
                 end
             end
@@ -53,14 +67,14 @@ function CP_UnloaderCaller.findCombineAndCarrier(vehicle)
     -- 3. Vehicle might be an implement mounted on a carrier (e.g. entered in NexCo)
     if vehicle.getRootVehicle ~= nil then
         local root = vehicle:getRootVehicle()
-        if root ~= nil and root ~= vehicle then
-            if vehicle.spec_combine ~= nil or vehicle.spec_forageHarvester ~= nil or (vehicle.spec_pipe ~= nil and vehicle.spec_dischargeable ~= nil) then
+        if root ~= nil and root ~= vehicle and not root.isDeleted then
+            if isHarvesterObject(vehicle) then
                 return vehicle, root
             end
             if root.getAttachedImplements ~= nil then
                 for _, impl in pairs(root:getAttachedImplements()) do
                     local obj = impl.object
-                    if obj ~= nil and (obj.spec_combine ~= nil or obj.spec_forageHarvester ~= nil or (obj.spec_pipe ~= nil and obj.spec_dischargeable ~= nil)) then
+                    if isHarvesterObject(obj) then
                         return obj, root
                     end
                 end
@@ -157,6 +171,15 @@ function CP_UnloaderCaller.removeAdapter(combine)
     end
 end
 
+function CP_UnloaderCaller.cleanupDeletedCombines()
+    if CP_UnloaderCaller.activeCombines == nil then return end
+    for obj, adapter in pairs(CP_UnloaderCaller.activeCombines) do
+        if obj == nil or obj.isDeleted or (adapter and ((adapter.combine and adapter.combine.isDeleted) or (adapter.vehicle and adapter.vehicle.isDeleted))) then
+            CP_UnloaderCaller.removeAdapter(obj)
+        end
+    end
+end
+
 function CP_UnloaderCaller.onUpdateTick(dt)
     if CP_UnloaderHooks and CP_UnloaderHooks.hookRhm then
         CP_UnloaderHooks.hookRhm()
@@ -164,6 +187,8 @@ function CP_UnloaderCaller.onUpdateTick(dt)
     if g_currentMission == nil or g_currentMission.vehicleSystem == nil then
         return
     end
+
+    CP_UnloaderCaller.cleanupDeletedCombines()
 
     local currentVehicles = g_currentMission.vehicleSystem.vehicles
     if currentVehicles == nil then return end
@@ -173,7 +198,7 @@ function CP_UnloaderCaller.onUpdateTick(dt)
 
     for _, vehicle in pairs(currentVehicles) do
         local combineObj, carrierObj = CP_UnloaderCaller.findCombineAndCarrier(vehicle)
-        if combineObj ~= nil and not checkedVehicles[combineObj] then
+        if combineObj ~= nil and not combineObj.isDeleted and not checkedVehicles[combineObj] then
             checkedVehicles[combineObj] = true
             local primeMover = carrierObj or vehicle
             checkedVehicles[primeMover] = true
@@ -181,9 +206,10 @@ function CP_UnloaderCaller.onUpdateTick(dt)
             local isAI = (primeMover.getIsAIActive and primeMover:getIsAIActive()) or (combineObj.getIsAIActive and combineObj:getIsAIActive())
             local adapter = CP_UnloaderCaller.activeCombines[primeMover] or CP_UnloaderCaller.activeCombines[combineObj]
 
-            if isAI then
+            if isAI or primeMover.isDeleted or combineObj.isDeleted then
                 if adapter ~= nil then
                     CP_UnloaderCaller.removeAdapter(primeMover)
+                    CP_UnloaderCaller.removeAdapter(combineObj)
                 end
             else
                 local isEntered = (primeMover.getIsEntered and primeMover:getIsEntered())
@@ -219,33 +245,59 @@ function CP_UnloaderCaller.onUpdateTick(dt)
                             adapter.assignedUnloader = nil
                             adapter.lastDepartedTime = currentTime
                             adapter.pipeCallEligible = false
-                        -- Physical command to DISMISS:
-                        -- For normal combines: If player folded pipe and is not discharging
-                        -- For choppers: choppers do not have folding pipes; dismiss only if player left vehicle for > 20s
-                        elseif not isChopper and not pipeOpen and not isDischarging then
-                            local name = (unloader.getName and unloader:getName()) or "Tractor"
-                            print(string.format("CP_PlayerUnload: Pipe folded by player, dismissing unloader '%s'", tostring(name)))
-                            if unloaderStrategy.releaseCombine then
-                                unloaderStrategy:releaseCombine()
+                        else
+                            -- Track if pipe was opened and if actively discharging with this unloader
+                            if pipeOpen then
+                                adapter.pipeWasOpenedForUnload = true
                             end
-                            if unloaderStrategy.startWaitingForSomethingToDo then
-                                unloaderStrategy:startWaitingForSomethingToDo()
+                            if isDischarging then
+                                adapter.wasDischargingWithUnloader = true
                             end
-                            adapter.assignedUnloader = nil
-                            adapter.lastDepartedTime = currentTime
-                            adapter.pipeCallEligible = false
-                        elseif isChopper and not isEntered and (currentTime - (adapter.lastEnteredTime or currentTime)) > 20000 then
-                            local name = (unloader.getName and unloader:getName()) or "Tractor"
-                            print(string.format("CP_PlayerUnload: Player left chopper, dismissing unloader '%s'", tostring(name)))
-                            if unloaderStrategy.releaseCombine then
-                                unloaderStrategy:releaseCombine()
+
+                            local unloaderState = unloaderStrategy.state
+                            local states = unloaderStrategy.states
+                            local isActivelyUnloading = states and (unloaderState == states.UNLOADING_MOVING_COMBINE or unloaderState == states.UNLOADING_STOPPED_COMBINE)
+                            local timeSinceAssigned = currentTime - (adapter.assignedTime or currentTime)
+
+                            -- Physical command to DISMISS:
+                            -- For normal combines: Dismiss ONLY if unloader was actively unloading or pipe was previously open for unload,
+                            -- and now player explicitly folded it (NEVER dismiss while en route or before pipe was ever opened!)
+                            if not isChopper then
+                                local shouldDismiss = false
+                                if adapter.pipeWasOpenedForUnload and not pipeOpen and not isDischarging then
+                                    if isActivelyUnloading or adapter.wasDischargingWithUnloader or timeSinceAssigned > 45000 then
+                                        shouldDismiss = true
+                                    end
+                                end
+
+                                if shouldDismiss then
+                                    local name = (unloader.getName and unloader:getName()) or "Tractor"
+                                    print(string.format("CP_PlayerUnload: Pipe folded by player after unloading, dismissing unloader '%s'", tostring(name)))
+                                    if unloaderStrategy.releaseCombine then
+                                        unloaderStrategy:releaseCombine()
+                                    end
+                                    if unloaderStrategy.startWaitingForSomethingToDo then
+                                        unloaderStrategy:startWaitingForSomethingToDo()
+                                    end
+                                    adapter.assignedUnloader = nil
+                                    adapter.lastDepartedTime = currentTime
+                                    adapter.pipeCallEligible = false
+                                    adapter.pipeWasOpenedForUnload = false
+                                    adapter.wasDischargingWithUnloader = false
+                                end
+                            elseif isChopper and not isEntered and (currentTime - (adapter.lastEnteredTime or currentTime)) > 20000 then
+                                local name = (unloader.getName and unloader:getName()) or "Tractor"
+                                print(string.format("CP_PlayerUnload: Player left chopper, dismissing unloader '%s'", tostring(name)))
+                                if unloaderStrategy.releaseCombine then
+                                    unloaderStrategy:releaseCombine()
+                                end
+                                if unloaderStrategy.startWaitingForSomethingToDo then
+                                    unloaderStrategy:startWaitingForSomethingToDo()
+                                end
+                                adapter.assignedUnloader = nil
+                                adapter.lastDepartedTime = currentTime
+                                adapter.pipeCallEligible = false
                             end
-                            if unloaderStrategy.startWaitingForSomethingToDo then
-                                unloaderStrategy:startWaitingForSomethingToDo()
-                            end
-                            adapter.assignedUnloader = nil
-                            adapter.lastDepartedTime = currentTime
-                            adapter.pipeCallEligible = false
                         end
                     end
 
@@ -302,7 +354,7 @@ function CP_UnloaderCaller.onUpdateTick(dt)
 end
 
 function CP_UnloaderCaller.findBestUnloader(combine)
-    if combine == nil or combine.rootNode == nil then return nil end
+    if combine == nil or combine.isDeleted or combine.rootNode == nil or (entityExists and not entityExists(combine.rootNode)) then return nil end
     local adapter = CP_UnloaderCaller.activeCombines[combine]
     local currentTime = (g_currentMission and g_currentMission.time) or 0
     local AIDriveStrategyUnloadCombine = CP_GetCpClass("AIDriveStrategyUnloadCombine")
@@ -312,12 +364,13 @@ function CP_UnloaderCaller.findBestUnloader(combine)
     end
 
     local bestUnloader = nil
-    local bestDistance = CP_UnloaderCaller.maxSearchDistance
+    local bestScore = -math.huge
     local cx, cy, cz = getWorldTranslation(combine.rootNode)
+    if cx == nil then return nil end
 
     local vehicles = g_currentMission.vehicleSystem.vehicles
     for _, v in pairs(vehicles) do
-        if v ~= combine then
+        if v ~= combine and not v.isDeleted then
             local isUnloader = false
             if AIDriveStrategyUnloadCombine.isActiveCpCombineUnloader and AIDriveStrategyUnloadCombine.isActiveCpCombineUnloader(v) then
                 isUnloader = true
@@ -339,21 +392,30 @@ function CP_UnloaderCaller.findBestUnloader(combine)
                         isAvailable = true
                     elseif strategy.isIdle and strategy:isIdle() then
                         isAvailable = true
-                    elseif strategy.state and strategy.states and strategy.state == strategy.states.IDLE then
+                    elseif strategy.state and strategy.states and (strategy.state == strategy.states.IDLE or strategy.state == strategy.states.WAITING_FOR_SOMETHING_TO_DO) then
                         isAvailable = true
                     end
 
                     if isAvailable then
                         local unloaderFill = (strategy.getFillLevelPercentage and strategy:getFillLevelPercentage()) or 0
                         if unloaderFill < 98 then
-                            local vx, vy, vz = getWorldTranslation(v.rootNode)
-                            local dist = MathUtil.vector2Length(cx - vx, cz - vz)
+                            if v.rootNode and (entityExists == nil or entityExists(v.rootNode)) then
+                                local vx, vy, vz = getWorldTranslation(v.rootNode)
+                                if vx ~= nil and vz ~= nil then
+                                    local dist = MathUtil.vector2Length(cx - vx, cz - vz)
+                                    if dist <= CP_UnloaderCaller.maxSearchDistance then
+                                        local isServingField = strategy.isServingPosition and strategy:isServingPosition(cx, cz, 30)
+                                        local fieldBonus = isServingField and 5000 or 0
+                                        local score = fieldBonus - dist - (unloaderFill * 5)
 
-                            print(string.format("CP_PlayerUnload: Found candidate unloader '%s' at distance %.1f m (fill: %.1f%%, state: %s)",
-                                tostring(v:getName()), dist, unloaderFill, tostring(strategy.state)))
-                            if dist < bestDistance then
-                                bestDistance = dist
-                                bestUnloader = v
+                                        print(string.format("CP_PlayerUnload: Candidate unloader '%s' at %.1f m (fill: %.1f%%, state: %s, servingField: %s, score: %.1f)",
+                                            tostring(v:getName()), dist, unloaderFill, tostring(strategy.state), tostring(isServingField), score))
+                                        if score > bestScore then
+                                            bestScore = score
+                                            bestUnloader = v
+                                        end
+                                    end
+                                end
                             end
                         else
                             print(string.format("CP_PlayerUnload: Unloader '%s' skipped because trailer is full (%.1f%%)", tostring(v:getName()), unloaderFill))
@@ -371,6 +433,7 @@ function CP_UnloaderCaller.callBestUnloader(vehicle, isManual)
     local adapter = CP_UnloaderCaller.getAdapter(vehicle)
     if adapter == nil then return false end
 
+    local currentTime = (g_currentMission and g_currentMission.time) or 0
     local targetVehicle = adapter.vehicle or vehicle
 
     if adapter.assignedUnloader and type(adapter.assignedUnloader) == "table" then
@@ -387,6 +450,9 @@ function CP_UnloaderCaller.callBestUnloader(vehicle, isManual)
             if currentStrategy and currentStrategy.call then
                 local success = currentStrategy:call(targetVehicle, nil)
                 if success then
+                    adapter.assignedTime = currentTime
+                    adapter.pipeWasOpenedForUnload = adapter:isPipeOpen()
+                    adapter.wasDischargingWithUnloader = false
                     adapter.pipeCallEligible = false
                     local name = (currentUnloader.getName and currentUnloader:getName()) or "Tractor"
                     local template = (g_i18n and g_i18n:hasText("cp_player_unload_called") and g_i18n:getText("cp_player_unload_called")) or "Courseplay unloader '%s' has been called."
@@ -441,6 +507,9 @@ function CP_UnloaderCaller.callBestUnloader(vehicle, isManual)
 
     if success then
         adapter.assignedUnloader = unloader
+        adapter.assignedTime = currentTime
+        adapter.pipeWasOpenedForUnload = adapter:isPipeOpen()
+        adapter.wasDischargingWithUnloader = false
         adapter.pipeCallEligible = false
         local name = (unloader.getName and unloader:getName()) or "Tractor"
         local template = (g_i18n and g_i18n:hasText("cp_player_unload_called") and g_i18n:getText("cp_player_unload_called")) or "Courseplay unloader '%s' has been called."

@@ -19,7 +19,7 @@ function CP_VirtualCourse.new(combine, primeMover)
 end
 
 function CP_VirtualCourse:update()
-    if self.combine == nil or self.combine.rootNode == nil then
+    if self.combine == nil or self.combine.isDeleted or self.combine.rootNode == nil then
         return nil
     end
 
@@ -30,10 +30,13 @@ function CP_VirtualCourse:update()
     self.lastUpdateTime = currentTime
 
     local dirNode = CP_PlayerAdapter.getWorkingDirectionNode(self.combine, self.vehicle)
-    if dirNode == nil then
+    if dirNode == nil or (entityExists and not entityExists(dirNode)) then
         return nil
     end
     local _, yRot, _ = getWorldRotation(dirNode)
+    if yRot == nil then
+        return nil
+    end
     local angleDeg = math.deg(yRot)
     local dx, dz = -math.sin(yRot), -math.cos(yRot)
     local Course = CP_GetCpClass("Course")
@@ -52,17 +55,19 @@ function CP_VirtualCourse:update()
     for i = -10, 140 do
         local dist = i * 2.0
         local wx, wy, wz = localToWorld(dirNode, 0, 0, dist)
-        table.insert(rawWaypoints, {
-            x = wx,
-            y = wy,
-            z = wz,
-            angle = angleDeg,
-            yRot = yRot,
-            dx = dx,
-            dz = dz,
-            rev = false,
-            getIsReverse = function() return false end
-        })
+        if wx ~= nil and wz ~= nil then
+            table.insert(rawWaypoints, {
+                x = wx,
+                y = wy or 0,
+                z = wz,
+                angle = angleDeg,
+                yRot = yRot,
+                dx = dx,
+                dz = dz,
+                rev = false,
+                getIsReverse = function() return false end
+            })
+        end
     end
 
     if Course ~= nil and type(Course) == "table" then

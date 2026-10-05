@@ -188,7 +188,8 @@ function CP_UnloaderHooks.init()
                             local Course = CP_GetCpClass("Course")
                             if Course and Course.createStraightForwardCourse then
                                 local offset = self.followingCourseOffset or (self.getFollowingCourseOffset and self:getFollowingCourseOffset(self.combineToUnload)) or 0
-                                self.followCourse = Course.createStraightForwardCourse(self.combineToUnload, 250, offset)
+                                local refNode = self:getPipeOffsetReferenceNode()
+                                self.followCourse = Course.createStraightForwardCourse(self.combineToUnload, 250, offset, refNode)
                                 self:startCourse(self.followCourse, 1)
                             end
                         end
@@ -221,9 +222,7 @@ function CP_UnloaderHooks.init()
     end
 
     -- 3b. Hook AIDriveStrategyUnloadCombine:isBehindAndAlignedToCombine
-    -- For choppers: ensures the unloader is strictly BEHIND the chopper cab/header (dz <= -2.0m) before
-    -- engaging follow mode, preventing premature pathfinder termination and collisions with the front header.
-    -- For grain combines: allows tractor cab to be ahead of trailer fill point (dz <= 8.0m) under the pipe.
+    -- Relaxed tolerances for curved field borders and player combines
     if AIDriveStrategyUnloadCombine and AIDriveStrategyUnloadCombine.isBehindAndAlignedToCombine then
         AIDriveStrategyUnloadCombine.isBehindAndAlignedToCombine = Utils.overwrittenFunction(
             AIDriveStrategyUnloadCombine.isBehindAndAlignedToCombine,
@@ -232,42 +231,38 @@ function CP_UnloaderHooks.init()
                     local strategy = self.combineToUnload:getCpDriveStrategy()
                     local hasAutoAim = strategy and strategy.hasAutoAimPipe and strategy:hasAutoAimPipe()
                     local CpMathUtil = CP_GetCpClass("CpMathUtil") or _G.CpMathUtil
-                    local dx, _, dz = localToLocal(self.vehicle.rootNode, self:getPipeOffsetReferenceNode(), 0, 0, 0)
+                    local tNode = CP_PlayerAdapter.getDirectionNode(self.vehicle)
+                    local cNode = self:getPipeOffsetReferenceNode() or CP_PlayerAdapter.getDirectionNode(self.combineToUnload)
+                    local dx, _, dz = localToLocal(tNode, cNode, 0, 0, 0)
                     local pipeOffset = self:getPipeOffset(self.combineToUnload)
+                    local d = MathUtil.vector2Length(dx, dz)
                     
                     if hasAutoAim then
                         -- For forage harvesters (choppers):
-                        -- Unloader MUST be behind the chopper cab/header (dz <= -2.0m) to avoid collisions with the header!
                         if dz > -2.0 then
                             return false
                         end
-                        -- Distance to combine must be within reasonable rendezvous range (< 45m)
-                        local d = MathUtil.vector2Length(dx, dz)
-                        if d > 45 then
+                        if d > 50 then
                             return false
                         end
-                        -- Lateral offset must be close to the chosen safe side
-                        if math.abs(dx - pipeOffset) > 4.0 then
+                        if math.abs(dx - pipeOffset) > 5.0 then
                             return false
                         end
                     else
                         -- For grain combines:
-                        -- Tractor pulling a trailer is ahead of the trailer fill point (dz <= 8m allowed)
-                        if dz > 8.0 then
+                        -- Allows tractor pulling trailer to track smoothly alongside on curves without false drops
+                        if dz > 15.0 then
                             return false
                         end
-                        local d = MathUtil.vector2Length(dx, dz)
-                        if d > 50 then
+                        if d > 65 then
                             return false
                         end
-                        if math.abs(dx - pipeOffset) > 3.0 then
+                        if math.abs(dx - pipeOffset) > 6.0 then
                             return false
                         end
                     end
 
-                    local dirLimit = 45
-                    local tNode = CP_PlayerAdapter.getDirectionNode(self.vehicle)
-                    local cNode = self:getPipeOffsetReferenceNode() or CP_PlayerAdapter.getDirectionNode(self.combineToUnload)
+                    local dirLimit = 60
                     if CpMathUtil and not CpMathUtil.isSameDirection(tNode, cNode, dirLimit) then
                         return false
                     end
@@ -279,9 +274,42 @@ function CP_UnloaderHooks.init()
         print("CP_PlayerUnload: Hooked AIDriveStrategyUnloadCombine.isBehindAndAlignedToCombine for player combines")
     end
 
+    -- 3b_2. Hook AIDriveStrategyUnloadCombine:isInFrontAndAlignedToMovingCombine
+    -- Ensures unloader tracking alongside on curved swaths is never aborted by Courseplay
+    if AIDriveStrategyUnloadCombine and AIDriveStrategyUnloadCombine.isInFrontAndAlignedToMovingCombine then
+        AIDriveStrategyUnloadCombine.isInFrontAndAlignedToMovingCombine = Utils.overwrittenFunction(
+            AIDriveStrategyUnloadCombine.isInFrontAndAlignedToMovingCombine,
+            function(self, superFunc, debugEnabled)
+                if self.combineToUnload and CP_UnloaderCaller and CP_UnloaderCaller.activeCombines and CP_UnloaderCaller.activeCombines[self.combineToUnload] ~= nil then
+                    local CpMathUtil = CP_GetCpClass("CpMathUtil") or _G.CpMathUtil
+                    local tNode = CP_PlayerAdapter.getDirectionNode(self.vehicle)
+                    local cNode = self:getPipeOffsetReferenceNode() or CP_PlayerAdapter.getDirectionNode(self.combineToUnload)
+                    local dx, _, dz = localToLocal(tNode, cNode, 0, 0, 0)
+                    local pipeOffset = self:getPipeOffset(self.combineToUnload)
+                    if dz < -5.0 then
+                        return false
+                    end
+                    local d = MathUtil.vector2Length(dx, dz)
+                    if d > 65 then
+                        return false
+                    end
+                    if math.abs(dx - pipeOffset) > 6.0 then
+                        return false
+                    end
+                    local dirLimit = 60
+                    if CpMathUtil and not CpMathUtil.isSameDirection(tNode, cNode, dirLimit) then
+                        return false
+                    end
+                    return true
+                end
+                return superFunc(self, debugEnabled)
+            end
+        )
+        print("CP_PlayerUnload: Hooked AIDriveStrategyUnloadCombine.isInFrontAndAlignedToMovingCombine for player combines")
+    end
+
     -- 3c. Hook AIDriveStrategyUnloadCombine:driveToCombine
-    -- If player combine started moving while unloader was approaching, seamlessly transition
-    -- to unloading / following the moving combine without waiting to hit the old stationary point!
+    -- Only transitions to unloading when actually in close proximity (<30m) to avoid premature unloader loss
     if AIDriveStrategyUnloadCombine and AIDriveStrategyUnloadCombine.driveToCombine then
         AIDriveStrategyUnloadCombine.driveToCombine = Utils.overwrittenFunction(
             AIDriveStrategyUnloadCombine.driveToCombine,
@@ -291,9 +319,12 @@ function CP_UnloaderHooks.init()
                     self:setFieldSpeed()
                     self.combineToUnload:getCpDriveStrategy():reconfirmRendezvous()
 
-                    local combineSpeed = (self.combineToUnload.getLastSpeed and self.combineToUnload:getLastSpeed()) or 0
                     local distToLast = (self.course and self.course.getDistanceToLastWaypoint and self.course:getDistanceToLastWaypoint(self.course:getCurrentWaypointIx())) or 0
-                    if (combineSpeed > 0.5 or distToLast < 25) and self:isOkToStartUnloadingCombine() then
+                    local d = 9999
+                    if self.vehicle and self.vehicle.rootNode and self.combineToUnload and self.combineToUnload.rootNode then
+                        d = calcDistanceFrom(self.vehicle.rootNode, self.combineToUnload.rootNode)
+                    end
+                    if (d < 30 or distToLast < 20) and self:isOkToStartUnloadingCombine() then
                         self:startUnloadingCombine()
                         return
                     end
@@ -302,7 +333,7 @@ function CP_UnloaderHooks.init()
                 return superFunc(self)
             end
         )
-        print("CP_PlayerUnload: Hooked AIDriveStrategyUnloadCombine.driveToCombine for seamless moving transition")
+        print("CP_PlayerUnload: Hooked AIDriveStrategyUnloadCombine.driveToCombine for proximity-verified moving transition")
     end
 
     -- 3d. Hook AIDriveStrategyUnloadCombine:onLastWaypointPassed
@@ -468,18 +499,25 @@ function CP_UnloaderHooks.init()
                     end
                     self:setMaxSpeed(math.max(0, speed))
 
-                    -- 3. Goal point:
-                    -- When dz > 5, calculate an artificial goal point straight under the pipe to align fast.
-                    -- When dz <= 5, return nil so Courseplay's Pure Pursuit Controller (PPC) takes over and
-                    -- follows the exact unload course straight under the pipe!
-                    local gx, gy, gz = nil, nil, nil
-                    if dz > 5 then
-                        local refNode = self:getPipeOffsetReferenceNode()
-                        local pipeOffsetX, _ = self:getPipeOffset(combine)
-                        local _, _, dzTractor = localToLocal(self.vehicle:getAIDirectionNode(), refNode, 0, 0, 0)
-                        local lookahead = (self.ppc and self.ppc.getLookaheadDistance and self.ppc:getLookaheadDistance()) or 8.0
-                        gx, gy, gz = localToWorld(refNode, pipeOffsetX, 0, dzTractor + lookahead)
+                    -- 3. Dynamic Curved Path Tracking & Turn Waiting:
+                    local isTurning = false
+                    if strategy and strategy.isTurning then
+                        isTurning = strategy:isTurning()
                     end
+                    if isTurning then
+                        self:setMaxSpeed(0)
+                        local tNode = CP_PlayerAdapter.getDirectionNode(self.vehicle)
+                        local gx, gy, gz = localToWorld(tNode, 0, 0, 5)
+                        return gx, gz
+                    end
+
+                    -- Always dynamically guide tractor along the combine's real-time heading and curved path!
+                    local refNode = self:getPipeOffsetReferenceNode() or CP_PlayerAdapter.getWorkingDirectionNode(combine)
+                    local pipeOffsetX, _ = self:getPipeOffset(combine)
+                    local tNode = CP_PlayerAdapter.getDirectionNode(self.vehicle)
+                    local _, _, dzTractor = localToLocal(tNode, refNode, 0, 0, 0)
+                    local lookahead = (self.ppc and self.ppc.getLookaheadDistance and self.ppc:getLookaheadDistance()) or 7.5
+                    local gx, gy, gz = localToWorld(refNode, pipeOffsetX, 0, dzTractor + lookahead)
                     return gx, gz
                 end
                 return superFunc(self)
@@ -533,40 +571,53 @@ function CP_UnloaderHooks.init()
         CollisionAvoidanceController.findPotentialCollisions = Utils.overwrittenFunction(
             CollisionAvoidanceController.findPotentialCollisions,
             function(self, superFunc)
-                for _, vehicle in pairs(g_currentMission.vehicleSystem.vehicles) do
-                    local isAssignedCombine = false
-                    if self.strategy and self.strategy.combineToUnload then
-                        local target = self.strategy.combineToUnload
-                        local targetRoot = (target.getRootVehicle and target:getRootVehicle()) or target
-                        local vRoot = (vehicle.getRootVehicle and vehicle:getRootVehicle()) or vehicle
-                        if vehicle == target or vRoot == targetRoot then
-                            isAssignedCombine = true
+                local ok, _ = pcall(function()
+                    local CpMathUtil = CP_GetCpClass("CpMathUtil") or _G.CpMathUtil
+                    for _, vehicle in pairs(g_currentMission.vehicleSystem.vehicles) do
+                        local isAssignedCombine = false
+                        if self.strategy and self.strategy.combineToUnload then
+                            local target = self.strategy.combineToUnload
+                            local targetRoot = (target.getRootVehicle and target:getRootVehicle()) or target
+                            local vRoot = (vehicle.getRootVehicle and vehicle:getRootVehicle()) or vehicle
+                            if vehicle == target or vRoot == targetRoot then
+                                isAssignedCombine = true
+                            end
                         end
-                    end
 
-                    if not isAssignedCombine and AIDriveStrategyCombineCourse.isActiveCpCombine(vehicle) then
-                        local d = calcDistanceFrom(self.vehicle.rootNode, vehicle.rootNode)
-                        if d < self.range then
-                            local myCourse = self.strategy:getCurrentCourse()
-                            local otherCourse = vehicle:getCpDriveStrategy() and vehicle:getCpDriveStrategy():getCurrentCourse()
-                            if myCourse and otherCourse and myCourse.intersects then
-                                local myDistanceToCollision, otherDistanceToCollision = myCourse:intersects(otherCourse, self.lookahead, true)
-                                if myDistanceToCollision then
-                                    local myEte = myDistanceToCollision / (self.strategy:getFieldSpeed())
-                                    local otherEte = CpMathUtil.divide(otherDistanceToCollision, (vehicle.lastSpeedReal * 1000))
-                                    if math.abs(myEte - otherEte) < self.eteDiffThreshold then
-                                        self.warningVehicle = vehicle
-                                        self.warning:set(true, self.clearWarningDelayMs)
-                                        return
+                        if not isAssignedCombine and AIDriveStrategyCombineCourse.isActiveCpCombine(vehicle) then
+                            local d = calcDistanceFrom(self.vehicle.rootNode, vehicle.rootNode)
+                            if d < (self.range or 50) then
+                                local myCourse = self.strategy and self.strategy.getCurrentCourse and self.strategy:getCurrentCourse()
+                                local otherStrategy = vehicle.getCpDriveStrategy and vehicle:getCpDriveStrategy()
+                                local otherCourse = otherStrategy and otherStrategy.getCurrentCourse and otherStrategy:getCurrentCourse()
+                                if myCourse and otherCourse and myCourse.intersects then
+                                    local myDistanceToCollision, otherDistanceToCollision = myCourse:intersects(otherCourse, self.lookahead or 25, true)
+                                    if myDistanceToCollision and otherDistanceToCollision then
+                                        local fieldSpeed = (self.strategy.getFieldSpeed and self.strategy:getFieldSpeed()) or 5.5
+                                        if fieldSpeed <= 0.1 then fieldSpeed = 5.5 end
+                                        local myEte = myDistanceToCollision / fieldSpeed
+                                        local otherSpeed = (vehicle.lastSpeedReal and vehicle.lastSpeedReal * 1000) or 0
+                                        local otherEte = 999999
+                                        if otherSpeed > 0.05 then
+                                            otherEte = otherDistanceToCollision / otherSpeed
+                                        elseif CpMathUtil and CpMathUtil.divide then
+                                            otherEte = CpMathUtil.divide(otherDistanceToCollision, otherSpeed)
+                                        end
+
+                                        if math.abs(myEte - otherEte) < (self.eteDiffThreshold or 8) then
+                                            self.warningVehicle = vehicle
+                                            self.warning:set(true, self.clearWarningDelayMs or 3000)
+                                            return
+                                        end
                                     end
                                 end
                             end
                         end
                     end
-                end
-                if self.warningVehicle and not self.warning:get() then
-                    self.warningVehicle = nil
-                end
+                    if self.warningVehicle and not self.warning:get() then
+                        self.warningVehicle = nil
+                    end
+                end)
             end
         )
         print("CP_PlayerUnload: Hooked CollisionAvoidanceController.findPotentialCollisions to ignore assigned combine")
@@ -852,7 +903,7 @@ function CP_UnloaderHooks.init()
         if AIDriveStrategyUnloadCombine.startChopperTurn then
             AIDriveStrategyUnloadCombine.startChopperTurn = Utils.overwrittenFunction(
                 AIDriveStrategyUnloadCombine.startChopperTurn,
-                function(self, combineStrategy, superFunc)
+                function(self, superFunc, combineStrategy)
                     if self.combineToUnload and CP_PlayerAdapter.isPlayerCombine(self.combineToUnload) then
                         return
                     end
@@ -865,12 +916,12 @@ function CP_UnloaderHooks.init()
         if AIDriveStrategyUnloadCombine.handleChopper180Turn then
             AIDriveStrategyUnloadCombine.handleChopper180Turn = Utils.overwrittenFunction(
                 AIDriveStrategyUnloadCombine.handleChopper180Turn,
-                function(self, superFunc)
+                function(self, superFunc, ...)
                     if self.combineToUnload and CP_PlayerAdapter.isPlayerCombine(self.combineToUnload) then
                         self:setNewState(self.states.UNLOADING_MOVING_COMBINE)
                         return self:followChopper()
                     end
-                    return superFunc(self)
+                    return superFunc(self, ...)
                 end
             )
             print("CP_PlayerUnload: Hooked AIDriveStrategyUnloadCombine.handleChopper180Turn")
@@ -879,12 +930,12 @@ function CP_UnloaderHooks.init()
         if AIDriveStrategyUnloadCombine.handleChopperHeadlandTurn then
             AIDriveStrategyUnloadCombine.handleChopperHeadlandTurn = Utils.overwrittenFunction(
                 AIDriveStrategyUnloadCombine.handleChopperHeadlandTurn,
-                function(self, superFunc)
+                function(self, superFunc, ...)
                     if self.combineToUnload and CP_PlayerAdapter.isPlayerCombine(self.combineToUnload) then
                         self:setNewState(self.states.UNLOADING_MOVING_COMBINE)
                         return self:followChopper()
                     end
-                    return superFunc(self)
+                    return superFunc(self, ...)
                 end
             )
             print("CP_PlayerUnload: Hooked AIDriveStrategyUnloadCombine.handleChopperHeadlandTurn")
@@ -896,7 +947,7 @@ function CP_UnloaderHooks.init()
         AIDriveStrategyCombineCourse.isActiveCpCombine = Utils.overwrittenFunction(
             AIDriveStrategyCombineCourse.isActiveCpCombine,
             function(vehicle, superFunc)
-                if vehicle and vehicle.spec_combine and CP_UnloaderCaller and CP_UnloaderCaller.activeCombines and CP_UnloaderCaller.activeCombines[vehicle] ~= nil then
+                if vehicle and (vehicle.spec_combine or vehicle.spec_forageHarvester) and CP_UnloaderCaller and CP_UnloaderCaller.activeCombines and CP_UnloaderCaller.activeCombines[vehicle] ~= nil then
                     return true
                 end
                 return superFunc(vehicle)
@@ -911,7 +962,7 @@ function CP_UnloaderHooks.init()
             CpAIWorker.getCpDriveStrategy = Utils.overwrittenFunction(
                 CpAIWorker.getCpDriveStrategy,
                 function(self, superFunc)
-                    if self.spec_combine ~= nil and CP_UnloaderCaller and CP_UnloaderCaller.activeCombines and CP_UnloaderCaller.activeCombines[self] ~= nil then
+                    if CP_UnloaderCaller and CP_UnloaderCaller.activeCombines and CP_UnloaderCaller.activeCombines[self] ~= nil then
                         return CP_UnloaderCaller.activeCombines[self]
                     end
                     return superFunc(self)
@@ -959,7 +1010,7 @@ function CP_UnloaderHooks.init()
                 function(self, superFunc)
                     local s = superFunc(self)
                     if s ~= nil then return s end
-                    if self.spec_combine ~= nil and CP_UnloaderCaller and CP_UnloaderCaller.activeCombines and CP_UnloaderCaller.activeCombines[self] ~= nil then
+                    if CP_UnloaderCaller and CP_UnloaderCaller.activeCombines and CP_UnloaderCaller.activeCombines[self] ~= nil then
                         return CP_UnloaderCaller.activeCombines[self]
                     end
                     return nil
@@ -967,7 +1018,7 @@ function CP_UnloaderHooks.init()
             )
         else
             Vehicle.getCpDriveStrategy = function(self)
-                if self.spec_combine ~= nil and CP_UnloaderCaller and CP_UnloaderCaller.activeCombines and CP_UnloaderCaller.activeCombines[self] ~= nil then
+                if CP_UnloaderCaller and CP_UnloaderCaller.activeCombines and CP_UnloaderCaller.activeCombines[self] ~= nil then
                     return CP_UnloaderCaller.activeCombines[self]
                 end
                 if self.spec_cpAIWorker ~= nil then
@@ -1118,7 +1169,7 @@ function CP_UnloaderHooks.hookRhm()
 end
 
 function CP_UnloaderHooks.onRegisterActionEvents(vehicle, isActiveForInput, isActiveForInputIgnoreSelection)
-    if not vehicle then
+    if not vehicle or CP_UnloaderCaller == nil or CP_UnloaderCaller.findCombineAndCarrier == nil then
         return
     end
 

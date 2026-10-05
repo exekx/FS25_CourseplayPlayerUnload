@@ -65,21 +65,26 @@ function CP_PlayerAdapter.isPlayerCombine(vehicle)
     return false
 end
 
+local function isValidNode(node)
+    return node ~= nil and node ~= 0 and (entityExists == nil or entityExists(node))
+end
+CP_PlayerAdapter.isValidNode = isValidNode
+
 function CP_PlayerAdapter.getDirectionNode(v)
-    if v == nil then return nil end
-    if v.aiDirectionNode ~= nil and v.aiDirectionNode ~= 0 then
+    if v == nil or v.isDeleted then return nil end
+    if isValidNode(v.aiDirectionNode) then
         return v.aiDirectionNode
     end
-    if v.spec_aiVehicle and v.spec_aiVehicle.aiDirectionNode and v.spec_aiVehicle.aiDirectionNode ~= 0 then
+    if v.spec_aiVehicle and isValidNode(v.spec_aiVehicle.aiDirectionNode) then
         return v.spec_aiVehicle.aiDirectionNode
     end
-    if v.spec_aiImplement and v.spec_aiImplement.aiDirectionNode and v.spec_aiImplement.aiDirectionNode ~= 0 then
+    if v.spec_aiImplement and isValidNode(v.spec_aiImplement.aiDirectionNode) then
         return v.spec_aiImplement.aiDirectionNode
     end
-    if v.components and v.components[1] and v.components[1].node and v.components[1].node ~= 0 then
+    if v.components and v.components[1] and isValidNode(v.components[1].node) then
         return v.components[1].node
     end
-    if v.rootNode ~= nil and v.rootNode ~= 0 then
+    if isValidNode(v.rootNode) then
         return v.rootNode
     end
     return nil
@@ -88,26 +93,28 @@ end
 function CP_PlayerAdapter.getWorkingDirectionNode(combine, vehicle)
     -- 1. Check attached cutter (header) first - 100% points in field working direction!
     local c = combine or vehicle
-    if c then
+    if c and not c.isDeleted then
         local spec = c.spec_combine
         if spec and spec.attachedCutters then
             for cutter, _ in pairs(spec.attachedCutters) do
-                local node = cutter.aiDirectionNode
-                    or (cutter.components and cutter.components[1] and cutter.components[1].node)
-                    or cutter.rootNode
-                if node and node ~= 0 then
-                    return node
+                if type(cutter) == "table" and not cutter.isDeleted then
+                    local node = (isValidNode(cutter.aiDirectionNode) and cutter.aiDirectionNode)
+                        or (cutter.components and cutter.components[1] and isValidNode(cutter.components[1].node) and cutter.components[1].node)
+                        or (isValidNode(cutter.rootNode) and cutter.rootNode)
+                    if node then
+                        return node
+                    end
                 end
             end
         end
         if c.getAttachedImplements then
             for _, impl in pairs(c:getAttachedImplements()) do
                 local obj = impl.object
-                if obj and (obj.spec_cutter or (obj.typeName and obj.typeName:find("cutter"))) then
-                    local node = obj.aiDirectionNode
-                        or (obj.components and obj.components[1] and obj.components[1].node)
-                        or obj.rootNode
-                    if node and node ~= 0 then
+                if obj and not obj.isDeleted and (obj.spec_cutter or (obj.typeName and obj.typeName:find("cutter"))) then
+                    local node = (isValidNode(obj.aiDirectionNode) and obj.aiDirectionNode)
+                        or (obj.components and obj.components[1] and isValidNode(obj.components[1].node) and obj.components[1].node)
+                        or (isValidNode(obj.rootNode) and obj.rootNode)
+                    if node then
                         return node
                     end
                 end
@@ -117,27 +124,27 @@ function CP_PlayerAdapter.getWorkingDirectionNode(combine, vehicle)
 
     -- 2. If modular combine (e.g. NexCo mounted on NEXAT carrier):
     -- The combine implement itself (NexCo) faces forward into the field, unlike the carrier chassis
-    if combine and vehicle and combine ~= vehicle then
-        local node = combine.aiDirectionNode
-            or (combine.components and combine.components[1] and combine.components[1].node)
-            or combine.rootNode
-        if node and node ~= 0 then
+    if combine and vehicle and combine ~= vehicle and not combine.isDeleted then
+        local node = (isValidNode(combine.aiDirectionNode) and combine.aiDirectionNode)
+            or (combine.components and combine.components[1] and isValidNode(combine.components[1].node) and combine.components[1].node)
+            or (isValidNode(combine.rootNode) and combine.rootNode)
+        if node then
             return node
         end
     end
 
     -- 3. Combine direction node
-    if combine then
-        local node = combine.aiDirectionNode
-            or (combine.components and combine.components[1] and combine.components[1].node)
-            or combine.rootNode
-        if node and node ~= 0 then
+    if combine and not combine.isDeleted then
+        local node = (isValidNode(combine.aiDirectionNode) and combine.aiDirectionNode)
+            or (combine.components and combine.components[1] and isValidNode(combine.components[1].node) and combine.components[1].node)
+            or (isValidNode(combine.rootNode) and combine.rootNode)
+        if node then
             return node
         end
     end
 
     -- 4. Prime mover / vehicle fallback
-    if vehicle then
+    if vehicle and not vehicle.isDeleted then
         return CP_PlayerAdapter.getDirectionNode(vehicle)
     end
     return nil
@@ -150,6 +157,9 @@ function CP_PlayerAdapter.new(combine, primeMover)
     self.isChopperVehicle = CP_PlayerAdapter.checkIsChopper(combine)
     self.virtualCourse = CP_VirtualCourse.new(self.combine, self.vehicle)
     self.assignedUnloader = nil
+    self.assignedTime = 0
+    self.pipeWasOpenedForUnload = false
+    self.wasDischargingWithUnloader = false
     self.unloaderToRendezvous = nil
     self.unloaderRendezvousWaypointIx = 1
     self.isVirtualCpStrategy = true
@@ -221,16 +231,18 @@ function CP_PlayerAdapter:update(dt)
     -- 3. Yaw rate / heading change calculation
     local headingRateDegPerSec = 0
     local dirNode = CP_PlayerAdapter.getWorkingDirectionNode(self.combine, self.vehicle)
-    if dirNode and dirNode ~= 0 then
+    if isValidNode(dirNode) then
         local dx, _, dz = localDirectionToWorld(dirNode, 0, 0, 1)
-        local curHeading = math.atan2(dx, dz)
-        if self.lastHeading ~= nil and dt and dt > 0 then
-            local diff = curHeading - self.lastHeading
-            while diff > math.pi do diff = diff - 2 * math.pi end
-            while diff < -math.pi do diff = diff + 2 * math.pi end
-            headingRateDegPerSec = math.deg(math.abs(diff)) / (dt / 1000.0)
+        if dx ~= nil and dz ~= nil then
+            local curHeading = math.atan2(dx, dz)
+            if self.lastHeading ~= nil and dt and dt > 0 then
+                local diff = curHeading - self.lastHeading
+                while diff > math.pi do diff = diff - 2 * math.pi end
+                while diff < -math.pi do diff = diff + 2 * math.pi end
+                headingRateDegPerSec = math.deg(math.abs(diff)) / (dt / 1000.0)
+            end
+            self.lastHeading = curHeading
         end
-        self.lastHeading = curHeading
     end
 
     -- 4. Check reversing
@@ -556,11 +568,12 @@ function CP_PlayerAdapter:getFillLevelPercentage()
     if self:isChopper() then
         return 0
     end
+    if not self.combine then return 0 end
     local spec = self.combine.spec_combine
     if spec ~= nil then
         local fillUnitIndex = spec.fillUnitIndex or 1
-        local fillLevel = self.combine:getFillUnitFillLevel(fillUnitIndex) or 0
-        local capacity = self.combine:getFillUnitCapacity(fillUnitIndex) or 1
+        local fillLevel = (self.combine.getFillUnitFillLevel and self.combine:getFillUnitFillLevel(fillUnitIndex)) or 0
+        local capacity = (self.combine.getFillUnitCapacity and self.combine:getFillUnitCapacity(fillUnitIndex)) or 1
         if capacity > 0 and capacity < 10000000 then
             return (fillLevel / capacity) * 100
         end
@@ -579,15 +592,16 @@ function CP_PlayerAdapter:getFillLevelPercentage()
 end
 
 function CP_PlayerAdapter:getFillType()
+    if not self.combine then return FillType.UNKNOWN end
     local spec = self.combine.spec_combine
     if spec ~= nil then
         local fillUnitIndex = spec.fillUnitIndex or 1
-        local ft = self.combine:getFillUnitFillType(fillUnitIndex)
+        local ft = self.combine.getFillUnitFillType and self.combine:getFillUnitFillType(fillUnitIndex)
         if ft and ft ~= FillType.UNKNOWN then
             return ft
         end
     end
-    if self.combine and self.combine.getCurrentDischargeNode and self.combine.getDischargeFillType then
+    if self.combine.getCurrentDischargeNode and self.combine.getDischargeFillType then
         local dischargeNode = self.combine:getCurrentDischargeNode()
         if dischargeNode then
             local ft = self.combine:getDischargeFillType(dischargeNode)
@@ -775,6 +789,7 @@ function CP_PlayerAdapter:isDischarging()
 end
 
 function CP_PlayerAdapter:isPipeMoving()
+    if not self.combine then return false end
     local pipeSpec = self.combine.spec_pipe
     if pipeSpec and pipeSpec.isMoving ~= nil then
         return pipeSpec.isMoving
@@ -786,6 +801,7 @@ function CP_PlayerAdapter:isPipeOpen()
     if self:isChopper() then
         return true
     end
+    if not self.combine then return false end
     local pipeSpec = self.combine.spec_pipe
     if pipeSpec then
         if pipeSpec.unloadingStates and pipeSpec.currentState then
@@ -809,7 +825,7 @@ function CP_PlayerAdapter:willWaitForUnloadToFinish()
     if self:isChopper() then
         return false -- Choppers never wait for stationary unload! Always dynamic follow.
     end
-    return self.combine:getLastSpeed() < 0.5
+    return (self.combine and self.combine.getLastSpeed and self.combine:getLastSpeed() < 0.5) or false
 end
 
 function CP_PlayerAdapter:isWaitingForUnload()
@@ -897,6 +913,7 @@ function CP_PlayerAdapter:alwaysNeedsUnloader()
     if self:isChopper() then
         return true
     end
+    if not self.combine then return false end
     local spec = self.combine.spec_combine
     if spec and spec.isForageHarvester then
         return true
@@ -933,26 +950,29 @@ end
 
 function CP_PlayerAdapter:getWorkWidth()
     local width = nil
-    local spec = self.combine.spec_combine
-    if spec and spec.attachedCutters then
-        for cutter, _ in pairs(spec.attachedCutters) do
-            if cutter.spec_cutter and cutter.spec_cutter.cuttingWidth then
-                width = math.max(width or 0, cutter.spec_cutter.cuttingWidth)
+    local combine = self.combine or self.vehicle
+    if combine and combine.spec_combine then
+        local spec = combine.spec_combine
+        if spec and spec.attachedCutters then
+            for cutter, _ in pairs(spec.attachedCutters) do
+                if cutter.spec_cutter and cutter.spec_cutter.cuttingWidth then
+                    width = math.max(width or 0, cutter.spec_cutter.cuttingWidth)
+                end
             end
         end
     end
-    if width == nil and self.combine.getAttachedImplements then
-        for _, impl in pairs(self.combine:getAttachedImplements()) do
+    if width == nil and combine and combine.getAttachedImplements then
+        for _, impl in pairs(combine:getAttachedImplements()) do
             local obj = impl.object
             if obj and obj.spec_cutter and obj.spec_cutter.cuttingWidth then
                 width = math.max(width or 0, obj.spec_cutter.cuttingWidth)
             end
         end
     end
-    if width == nil then
+    if width == nil and combine then
         local AIUtil = CP_GetCpClass("AIUtil") or _G.AIUtil
         if AIUtil and AIUtil.getWidth then
-            width = AIUtil.getWidth(self.combine)
+            width = AIUtil.getWidth(combine)
         end
     end
     return width or 6.0
@@ -961,18 +981,24 @@ end
 --- Checks both sides of the combine for crops to tell Courseplay which side is clear
 function CP_PlayerAdapter:checkFruit()
     local dirNode = self:getPipeOffsetReferenceNode()
+    if not isValidNode(dirNode) then
+        self.fruitLeft = 0
+        self.fruitRight = 0
+        return
+    end
+
     local workWidth = self:getWorkWidth() or 6.0
     local PathfinderUtil = CP_GetCpClass("PathfinderUtil") or _G.PathfinderUtil
 
     if PathfinderUtil and PathfinderUtil.hasFruit then
         -- Check left (+workWidth in Giants local space)
         local xl, _, zl = localToWorld(dirNode, workWidth, 0, 0)
-        local hasFruitLeft, fruitValLeft = PathfinderUtil.hasFruit(xl, zl, 2, 2)
+        local hasFruitLeft, fruitValLeft = (xl ~= nil and zl ~= nil) and PathfinderUtil.hasFruit(xl, zl, 2, 2)
         self.fruitLeft = (hasFruitLeft and (fruitValLeft or 100)) or 0
 
         -- Check right (-workWidth in Giants local space)
         local xr, _, zr = localToWorld(dirNode, -workWidth, 0, 0)
-        local hasFruitRight, fruitValRight = PathfinderUtil.hasFruit(xr, zr, 2, 2)
+        local hasFruitRight, fruitValRight = (xr ~= nil and zr ~= nil) and PathfinderUtil.hasFruit(xr, zr, 2, 2)
         self.fruitRight = (hasFruitRight and (fruitValRight or 100)) or 0
     else
         self.fruitLeft = 0
@@ -986,19 +1012,23 @@ function CP_PlayerAdapter:getFruitAtSides()
 end
 
 function CP_PlayerAdapter:getPipeOffsetReferenceNode()
-    if self:isAttachedHarvester() and self.combine then
-        local node = self.combine.aiDirectionNode
-            or (self.combine.components and self.combine.components[1] and self.combine.components[1].node)
-            or self.combine.rootNode
-        if node and node ~= 0 then
+    if self:isAttachedHarvester() and self.combine and not self.combine.isDeleted then
+        local node = (isValidNode(self.combine.aiDirectionNode) and self.combine.aiDirectionNode)
+            or (self.combine.components and self.combine.components[1] and isValidNode(self.combine.components[1].node) and self.combine.components[1].node)
+            or (isValidNode(self.combine.rootNode) and self.combine.rootNode)
+        if node then
             return node
         end
     end
     local node = CP_PlayerAdapter.getDirectionNode(self.vehicle or self.combine)
-    if node and node ~= 0 then
+    if isValidNode(node) then
         return node
     end
-    return (self.combine and self.combine.rootNode) or (self.vehicle and self.vehicle.rootNode)
+    local rootFallback = (self.combine and self.combine.rootNode) or (self.vehicle and self.vehicle.rootNode)
+    if isValidNode(rootFallback) then
+        return rootFallback
+    end
+    return nil
 end
 
 function CP_PlayerAdapter:getMeasuredBackDistance()
