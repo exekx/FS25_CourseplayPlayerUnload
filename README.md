@@ -4,7 +4,7 @@
 [![Courseplay Add-on](https://img.shields.io/badge/Add--on%20for-Courseplay-blue.svg)](https://github.com/Courseplay/Courseplay_FS25)
 [![GitHub Repository](https://img.shields.io/badge/GitHub-FS25__CourseplayPlayerUnload-181717?logo=github)](https://github.com/exekx/FS25_CourseplayPlayerUnload)
 [![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)](https://www.gnu.org/licenses/gpl-3.0)
-[![Version](https://img.shields.io/badge/Version-1.1.4.0-brightgreen.svg)](https://github.com/exekx/FS25_CourseplayPlayerUnload/releases)
+[![Version](https://img.shields.io/badge/Version-1.1.5.0-brightgreen.svg)](https://github.com/exekx/FS25_CourseplayPlayerUnload/releases)
 
 A standalone add-on mod for **Farming Simulator 25** and **Courseplay** that enables Courseplay AI unloader tractors to automatically approach, track, match speed, and unload combines and forage harvesters (choppers) driven by human players!
 
@@ -12,25 +12,43 @@ A standalone add-on mod for **Farming Simulator 25** and **Courseplay** that ena
 
 ---
 
-## What's New in v1.1.4.0
+## What's New in v1.1.5.0
 
-- 🔄 **Deep Turn & Headland Maneuver Detection:**
-  The unloader tractor/truck dynamically tracks multiple physical indicators to detect when a player combine or forage harvester is turning at row ends or headlands:
-  - **Cutter / Pickup Lifted Status:** Detects when headers, cutters, or swath pickups are raised (`getIsLowered == false`).
-  - **Active Harvesting & Crop Flow:** Directly reads internal machine feeding slots (`loadingDelaySlots`, `isChopperFilling`, `isDischarging`). If no crop is being processed while steering, a headland turn is immediately recognized.
-  - **Steering Lock, Yaw Rate & Reversing:** Distinguishes normal row driving from sharp turns, reverse 3-point turns, and headland swings.
-- 🛑 **Headland Waiting & Full Turning Clearance:**
-  Unloader tractors stop cleanly in place at the end of the swath during turn maneuvers, giving the combine 100% free space to complete its turn without collisions or crowding.
-- ⚡ **Instant Turn Completion & Seamless Resume:**
-  As soon as the player lowers the header onto the new swath or centers steering on the new row, the turn state finishes instantly and the unloader smoothly rejoins the combine on the new row without freezing or deadlocking!
-- 🌾 **Swath & Windrow Side Selection:**
-  When picking up swaths with pickups, unloaders intelligently maintain the side of approach or respect manual Courseplay offset (+X left, -X right).
-- 🛡️ **Courseplay Chopper Turn State Safety Guards:**
-  Intercepts internal Courseplay chopper turn states (`startChopperTurn`, `handleChopper180Turn`, `handleChopperHeadlandTurn`) so unloaders never get trapped in non-existent AI fieldwork courses with empty waypoints (`--/--`).
-- 🛡️ **GIANTS Engine Bug Safety Guard:**
-  Integrated an engine patch preventing repeating LUA console error spam (`AIVehicleUtil.lua:337: attempt to index nil with 'getAttachedImplements'`) whenever unloader tractors or player machines tow trailers or implements lacking rear attacher joints (e.g. Krampe SB 30/60).
-- 🌽 **Forage Harvester (Chopper) Safe Standoff:**
-  Unloaders maintain a safe 5m rearward standoff distance behind the chopper cab under the spout and dynamically track crop sides.
+### Unloader Selection and Long-Range Dispatch
+- Added expanded search radius up to 4000 meters for seamless unloader dispatch across massive 4x and 16x maps.
+- Added intelligent unloader candidate scoring prioritizing tractors already serving the active field.
+- Added trailer fill level weighting in tractor selection to prefer empty or partially loaded wagons over nearly full trailers.
+- Added support for dispatching unloaders in waiting states (`WAITING_FOR_SOMETHING_TO_DO` and `IDLE`).
+
+### Harvester Detection and Trailer Filtering
+- Added strict harvester object verification (`isHarvesterObject`) preventing false-positive assignments.
+- Fixed trailer and auger wagon misidentification: grain carts, silage trailers, and slurry tanks are no longer mistaken for harvesters.
+- Preserved specialized support for genuine trailed root and forage harvesters with cutters and discharge pipes.
+- Added carrier and modular implement hierarchy validation for complex setups.
+
+### Curved Swaths and Dynamic Path Tracking
+- Relaxed alignment angle tolerance up to 60 degrees to prevent unloader dropouts on sharp turns and curved field boundaries.
+- Expanded lateral offset tolerances up to 6 meters to keep unloaders tracking smoothly alongside on uneven ground.
+- Added proximity verification (< 30m) in approach phase before switching into active unloading mode.
+- Improved dynamic lookahead targeting along the combine's real-time heading and curved path.
+
+### Pipe Controls and Unloader Lifecycle
+- Added smart pipe-folding dismissal tracking: tractors en route across the field are no longer cancelled before reaching the machine.
+- Configured dismissal to trigger only after unloading has actively taken place or when the pipe is folded after being opened for discharge.
+- Added automatic unloader release when the player exits a forage harvester for longer than 20 seconds.
+- Ensured clean state reset upon tractor departure to prevent stale assignment locks.
+
+### Forage Harvester Turn Handling
+- Fixed hook argument signature for Courseplay's `startChopperTurn` preventing method call errors.
+- Removed open-loop steering routines to eliminate erratic wheel movements and tractor jitter during turns.
+- Restored clean swath-end waiting: tractors stop straight in place at the end of the swath, giving the harvester 100% free turning room.
+- Polished smooth speed matching and dynamic rearward standoff follow once the harvester enters the new row.
+
+### Stability and Engine Crash Guards
+- Added recursive cleanup routine removing despawned, sold, or reset vehicles from active tracking tables.
+- Added entity existence and valid node checks (`isValidNode`, `entityExists`) prior to all spatial calculations.
+- Wrapped collision avoidance checks in protected calls (`pcall`) to eliminate zero-speed division errors and nil reference crashes.
+- Added safety guards for input action bindings when vehicle or caller tables are uninitialized.
 
 ---
 
